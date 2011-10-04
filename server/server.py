@@ -4,6 +4,7 @@ import threading
 import sys
 from PyQt4 import QtCore, QtGui
 from serverwindow import Ui_Form
+import pickle
 
 global connections
 global calls #calls will be a list that contains n-tuples, each of which corresponds to a conference in progress
@@ -19,17 +20,17 @@ class Client(QtCore.QThread):
     self.username = ''
 
   def run(self): #when the client thread is started
-
-
     usn = self.client.recv(self.size)
     if connections.has_key(usn):
-      self.client.send('REJECT')
-    else:
-      self.client.send('ACCEPT')
+      self.client.send('REJECT') #TODO and terminate this client!!
+      self.client.close()
+      return #XXX guessing.
 
-    connections[usn] = self.client #username, socket pair
+    self.client.send('ACCEPT')
+
     self.username = usn
-
+    connections[self.username] = self.client #username, socket pair
+    
     self.emit(QtCore.SIGNAL("updateUserlist"), None)
 
 #    try:
@@ -44,7 +45,7 @@ class Client(QtCore.QThread):
       except socket.error as (number,msg):
         del connections[self.address]
         self.emit(QtCore.SIGNAL("updateUserlist"), None) #send data as test
-        self.emit(QtCore.SIGNAL("updateText"), (self.address + " has disconnected"))
+        self.emit(QtCore.SIGNAL("updateText"), (self.username + " has disconnected"))
         return
 
       if data:
@@ -106,14 +107,12 @@ class Client(QtCore.QThread):
               connections[h].send("Adding "+self.address+" to the call")
           else:
             connections[self.address].send("There is no call active, you cannot make a conference call, use \call\n")
-
-          
         else:
           self.send_all(data)
-          self.emit(QtCore.SIGNAL("updateText"), (self.address + " sends msg " + data))
+          self.emit(QtCore.SIGNAL("updateText"), (self.username + " sends msg " + data))
    
       else: #NO DATA
-        del connections[self.address]
+        del connections[self.username]
 
         for conference in calls: #TODO fix if already in call
           if self.address in conference:
@@ -132,7 +131,7 @@ class Client(QtCore.QThread):
         print calls
 
         self.emit(QtCore.SIGNAL("updateUserlist"), None) #send data as test
-        self.emit(QtCore.SIGNAL("updateText"), (self.address + " has disconnected"))
+        self.emit(QtCore.SIGNAL("updateText"), (self.username + " has disconnected"))
         self.running = 0
 
   def host_in_call(self, host):
@@ -158,7 +157,7 @@ class Client(QtCore.QThread):
   def send_all(self, msg):
     for socket in connections.values():
       try:
-        socket.send(self.address+': '+msg)
+        socket.send(self.username+': '+msg)
       except IOError: 
         print 'Socket already closed'
 
@@ -253,7 +252,7 @@ class ServerGUI(QtGui.QWidget):
       item = QtGui.QListWidgetItem(str(i))
       self.ui.listWidget.addItem(item) 
 
-    userlist = pickle.dumps(connection.keys()) 
+    userlist = pickle.dumps(connections.keys()) 
 
     for socket in connections.values(): #send the updated userlist
       try:

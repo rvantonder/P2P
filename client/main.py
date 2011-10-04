@@ -5,9 +5,6 @@ import sys
 
 if __name__ == '__main__':
     try:
-      sys.argv[1] = 'localhost'
-      sys.argv[2] = '3000'
-      sys.argv[3] = 'bob'
       app = QtGui.QApplication(sys.argv)
       gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
       gui.show()

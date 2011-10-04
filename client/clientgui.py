@@ -41,7 +41,7 @@ class ClientForm(QtGui.QWidget):
       sys.exit(1)
 
     try:
-      self.socket.send("\usn "+usn)
+      self.socket.send(usn)
       response = self.socket.recv(self.size)
       if response == 'ACCEPT':
         self.username = usn
@@ -70,6 +70,7 @@ class ClientForm(QtGui.QWidget):
     self.ui.lineEdit.setText('')
 
   def update_userlist(self, l):
+    print 'l',l
     self.ui.listWidget.clear()
 
     for i in l:
@@ -78,7 +79,7 @@ class ClientForm(QtGui.QWidget):
 
   def update_msg(self, msg):
     self.ui.textEdit.append(msg)
-    self.ui.textEdit.ensurecursorVisible()
+    self.ui.textEdit.ensureCursorVisible()
 
 class Receiver(QtCore.QThread):
   def __init__(self, socket):
@@ -108,10 +109,12 @@ class Receiver(QtCore.QThread):
 
   def parse_message(self, response):
 
-    if msg.startswith('(l'): #pickled userlist
-      userlist = pickle.loads(msg)
+    if response.startswith('(l'): #pickled userlist
+      userlist = pickle.loads(response)
+      print 'userlist',userlist
+      userlist.sort()
 
-      self.emit(QtCore.SIGNAL("update_userlist"), userlist.sort())
+      self.emit(QtCore.SIGNAL("update_userlist"), userlist)
       return None
 
     self.emit(QtCore.SIGNAL("update_msg"), response)
