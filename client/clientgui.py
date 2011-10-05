@@ -88,7 +88,7 @@ class ClientForm(QtGui.QWidget):
     self.ui.textEdit.append(msg)
     self.ui.textEdit.ensureCursorVisible()
 
-  def update_progressbar(self, value)
+  def update_progressbar(self, value):
     pass
 
 class Receiver(QtCore.QThread):
