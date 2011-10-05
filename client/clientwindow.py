@@ -30,7 +30,7 @@ class Ui_Form(object):
         self.lineEdit.setGeometry(QtCore.QRect(0, 160, 331, 20))
         self.lineEdit.setMaxLength(100) #TODO, but to be safe...
         self.lineEdit.setObjectName("lineEdit")
-        self.lineEdit.setText("Enter username")
+        #self.lineEdit.setText("Enter username")
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
 

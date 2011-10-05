@@ -8,6 +8,8 @@ import threading
 import socket
 import pickle
 import os
+import random
+import time
 
 from PyQt4 import QtCore, QtGui
 from clientwindow import Ui_Form
@@ -15,34 +17,6 @@ from clientwindow import Ui_Form
 """
 The Client GUI class.
 """
-
-MY_RED_STYLE = """
-QProgressBar{
-  border: 2px solid grey;
-  border-radius: 5px;
-  text-align: center
-}
-
-QProgressBar::chunk {
-  background-color: red;
-  height: 10px;
-  margin: 1px;
-}
-"""    
-
-MY_BLUE_STYLE = """
-QProgressBar{
-  border: 2px solid grey;
-  border-radius: 5px;
-  text-align: center
-}
-
-QProgressBar::chunk {
-  background-color: blue;
-  height: 10px;
-  margin: 1px;
-}
-"""    
 
 class MProgressBar(QtGui.QProgressBar):
   def __init__(self, parent = None):
@@ -67,18 +41,17 @@ class ClientForm(QtGui.QWidget):
     self.user_colour_list = {}
     self.running = 1
 
-    self.dpbar = MProgressBar(self)
+    self.dpbar = MProgressBar(self) #download bar
     self.dpbar.setOrientation(QtCore.Qt.Vertical)
     self.dpbar.setGeometry(520, 0, 20, 189)
     self.dpbar.setValue(25)
     self.dpbar.setStyle(False)
 
-    self.upbar = MProgressBar(self)
+    self.upbar = MProgressBar(self) #upload bar
     self.upbar.setOrientation(QtCore.Qt.Vertical)
     self.upbar.setGeometry(545, 0, 20, 189)
     self.upbar.setValue(75)
     self.upbar.setStyle(True)
-
 
     self.host = host
     self.port = port
@@ -107,6 +80,7 @@ class ClientForm(QtGui.QWidget):
     self.receiver = Receiver(self.socket)
     self.connect(self.receiver, QtCore.SIGNAL("update_msg"), self.update_msg)
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
+    self.connect(self.receiver, QtCore.SIGNAL("update_download_progressbar"), self.update_download_progressbar) #tester method. should be connected to a Downloader object
     self.receiver.start() #start listening
 
     #self.downloader = Downloader()
@@ -135,8 +109,17 @@ class ClientForm(QtGui.QWidget):
     self.ui.textEdit.append(msg)
     self.ui.textEdit.ensureCursorVisible()
 
-  def update_progressbar(self, value):
-    pass
+  def update_download_progressbar(self, value):
+    self.dpbar.setValue(value)
+    v = value
+    if not v == 100: #XXX this is ONLY to demonstrate how it would appear. sleeping the thread is NOT a good idea; it defers other GUI events. no idea for a work around right now. its own thread would be overkill.
+      while not v == 100:
+        time.sleep(.005)
+        v += 1
+        self.dpbar.setValue(v)
+    
+  def update_upload_progressbar(self, value):
+    self.upbar.setValue(value) 
 
 class Receiver(QtCore.QThread):
   def __init__(self, socket):
@@ -157,6 +140,8 @@ class Receiver(QtCore.QThread):
           display = self.parse_message(response)
           if not display == None:
             self.emit(QtCore.SIGNAL("update_msg"), display)
+            random_value = int(random.random()*100) #XXX tester method
+            self.emit(QtCore.SIGNAL("update_download_progressbar"), random_value) #XXX tester method
       except socket.error:
         print 'Unexpected error, disconnecting'
         self.socket.close()
@@ -173,7 +158,8 @@ class Receiver(QtCore.QThread):
       self.emit(QtCore.SIGNAL("update_userlist"), userlist)
       return None
 
-    self.emit(QtCore.SIGNAL("update_msg"), response)
+    #self.emit(QtCore.SIGNAL("update_msg"), response)
+    return response
 
 class Downloader(QtCore.QThread):
   def __init__(self):
@@ -215,7 +201,34 @@ class Downloader(QtCore.QThread):
     if not cmd == r'\msg':
     """
       
-    
+MY_RED_STYLE = """
+QProgressBar{
+  border: 2px solid grey;
+  border-radius: 5px;
+  text-align: center
+}
+
+QProgressBar::chunk {
+  background-color: #C41336;
+  height: 10px;
+  margin: 1px;
+}
+"""    
+
+MY_BLUE_STYLE = """
+QProgressBar{
+  border: 2px solid grey;
+  border-radius: 5px;
+  text-align: center
+}
+
+QProgressBar::chunk {
+  background-color: #1589C1;
+  height: 10px;
+  margin: 1px;
+}
+"""    
+ 
 
 if __name__ == '__main__':
   gui = ClientForm('localhost',3001)
