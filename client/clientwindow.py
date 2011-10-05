@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(518, 189)
+        Form.resize(620, 189)
         Form.setWindowIcon(QtGui.QIcon('tray.png'))
         self.listWidget = QtGui.QListWidget(Form)
         self.listWidget.setGeometry(QtCore.QRect(340, 10, 171, 171))

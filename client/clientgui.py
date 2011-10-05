@@ -16,6 +16,46 @@ from clientwindow import Ui_Form
 The Client GUI class.
 """
 
+MY_RED_STYLE = """
+QProgressBar{
+  border: 2px solid grey;
+  border-radius: 5px;
+  text-align: center
+}
+
+QProgressBar::chunk {
+  background-color: red;
+  height: 10px;
+  margin: 1px;
+}
+"""    
+
+MY_BLUE_STYLE = """
+QProgressBar{
+  border: 2px solid grey;
+  border-radius: 5px;
+  text-align: center
+}
+
+QProgressBar::chunk {
+  background-color: blue;
+  height: 10px;
+  margin: 1px;
+}
+"""    
+
+class MProgressBar(QtGui.QProgressBar):
+  def __init__(self, parent = None):
+    QtGui.QProgressBar.__init__(self, parent)
+    self.setStyleSheet(MY_BLUE_STYLE) 
+    self.setTextVisible(False)
+
+  def setStyle(self, s):
+    if s:
+      self.setStyleSheet(MY_BLUE_STYLE)
+    else:
+      self.setStyleSheet(MY_RED_STYLE)
+
 class ClientForm(QtGui.QWidget):
   def __init__(self, host, port, usn):
     super(ClientForm, self).__init__()
@@ -27,11 +67,18 @@ class ClientForm(QtGui.QWidget):
     self.user_colour_list = {}
     self.running = 1
 
-    self.pbar = QtGui.QProgressBar(self)
-#    self.pbar.initStyleOption(QtGui.QMacStyle)
-    self.pbar.setOrientation(QtCore.Qt.Vertical)
-    self.pbar.setGeometry(0, 0, 30, 200)
-    
+    self.dpbar = MProgressBar(self)
+    self.dpbar.setOrientation(QtCore.Qt.Vertical)
+    self.dpbar.setGeometry(520, 0, 20, 189)
+    self.dpbar.setValue(25)
+    self.dpbar.setStyle(False)
+
+    self.upbar = MProgressBar(self)
+    self.upbar.setOrientation(QtCore.Qt.Vertical)
+    self.upbar.setGeometry(545, 0, 20, 189)
+    self.upbar.setValue(75)
+    self.upbar.setStyle(True)
+
 
     self.host = host
     self.port = port
@@ -62,6 +109,8 @@ class ClientForm(QtGui.QWidget):
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
     self.receiver.start() #start listening
 
+    #self.downloader = Downloader()
+
   def on_lineEdit_returnPressed(self):
     if self.ui.lineEdit.displayText() != '':
       stringToSend = self.ui.lineEdit.displayText()
@@ -76,7 +125,6 @@ class ClientForm(QtGui.QWidget):
     self.ui.lineEdit.setText('')
 
   def update_userlist(self, l):
-    print 'l',l
     self.ui.listWidget.clear()
 
     for i in l:
@@ -86,6 +134,9 @@ class ClientForm(QtGui.QWidget):
   def update_msg(self, msg):
     self.ui.textEdit.append(msg)
     self.ui.textEdit.ensureCursorVisible()
+
+  def update_progressbar(self, value):
+    pass
 
 class Receiver(QtCore.QThread):
   def __init__(self, socket):
@@ -117,13 +168,22 @@ class Receiver(QtCore.QThread):
 
     if response.startswith('(l'): #pickled userlist
       userlist = pickle.loads(response)
-      print 'userlist',userlist
       userlist.sort()
 
       self.emit(QtCore.SIGNAL("update_userlist"), userlist)
       return None
 
     self.emit(QtCore.SIGNAL("update_msg"), response)
+
+class Downloader(QtCore.QThread):
+  def __init__(self):
+    parent = None
+    QtCore.QThread.__init__(self, parent)
+
+  def download():
+    pass
+    #calculate amount downloaded out of total
+    #self.emit(QtCore.SIGNAL("update_progressbar"), value)
 
 
     """
