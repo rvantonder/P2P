@@ -18,6 +18,8 @@ from clientwindow import Ui_Form
 The Client GUI class.
 """
 
+global filelist
+
 class MProgressBar(QtGui.QProgressBar):
   def __init__(self, parent = None):
     QtGui.QProgressBar.__init__(self, parent)
@@ -171,35 +173,10 @@ class Downloader(QtCore.QThread):
     #calculate amount downloaded out of total
     #self.emit(QtCore.SIGNAL("update_progressbar"), value)
 
-
-    """
-    cmd = ""
-    host = ""
-    msg = ""
-
-    try:
-      sdata = data.split(" ")
-    except:
-      pass
-
-    try:
-      cmd = sdata[0]
-    except:
-      print 'no cmd index'
-    
-    try:
-      host = sdata[1]
-      host.rstrip()
-    except:
-      print 'no host'
-       
-    try:
-      msg = data[len(cmd)+len(host):]
-    except:
-      print 'no msg'
-
-    if not cmd == r'\msg':
-    """
+class Searcher(QtCore.QThread): #will search for files and return the result to the server. incomplete, not sure if this is the right approach
+  def __init__(self):
+    parent = None
+    QtCore.QThread.__init__(self, parent)
       
 MY_RED_STYLE = """
 QProgressBar{
