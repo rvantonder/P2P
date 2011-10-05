@@ -33,12 +33,6 @@ class Client(QtCore.QThread):
     
     self.emit(QtCore.SIGNAL("updateUserlist"), None)
 
-#    try:
-#      self.client.send("ul__ "+' '.join(connections.keys())+"\n")
-#      self.emit(QtCore.SIGNAL("updateText"), (self.address + " has connected"))
-#    except socket.error:
-#      print 'failed sending userlist'
-
     while self.running:
       try:
         data = self.client.recv(self.size)
@@ -51,108 +45,19 @@ class Client(QtCore.QThread):
       if data:
         cmd, host, msg = self.parse(data)
         
-        if cmd == r'\call':
-          if self.address == host:
-            connections[self.address].send("You cannot call yourself")
-            break #TODO confirm working
-
-          self.emit(QtCore.SIGNAL("updateText"), (self.address + " wants to call " + host))
-          if host in connections.keys(): #TODO add callers to conferences
-            if self.host_in_call(host) or self.host_in_call(self.address): #check if either in call already
-              self.emit(QtCore.SIGNAL("updateText"), ("already in calls"))
-              connections[self.address].send("A call is already active, use \callc")
-              connections[host].send("A call is already active, use \callc")
-            else:
-              self.emit(QtCore.SIGNAL("updateText"), (host + " found"))
-              connections[self.address].send("ca__ "+host) #todo add call state variable
-              connections[host].send("ca__ "+self.address)
-              calls.append([self.address,host]) #append the call/conference
-              connections[self.address].send("You are now in a call with "+host)
-              connections[host].send("You are now in a call with "+self.address)
-            
-            #connect procedure
-          else:
-            self.emit(QtCore.SIGNAL("updateText"), (host + " not found"))
-            self.client.send("The host you wish to call does not exist")
+        if cmd == r'\search':
+          pass
         elif cmd == r'\msg':
           self.whisper(host, msg)
-        elif cmd == r'\dc':
-          print 'Current calls'
-          print calls
-          self.emit(QtCore.SIGNAL("updateText"), (self.address + " wants to disconnect a call "))
-
-          for conference in calls: 
-            if self.address in conference:
-              conference.remove(self.address) #remove myself from the call/conference
-              connections[self.address].send("dc__")
-              self.emit(QtCore.SIGNAL("updateText"), (self.address + " has been prompted to disconnect "))
-              if len(conference) == 1: #if there are less than two involved in the call
-                connections[conference[0]].send("dc__") #send the other host a dc__ command
-                self.emit(QtCore.SIGNAL("updateText"), (conference[0] + " has been prompted to disconnect "))
-                calls.remove(conference) #delete the entire call if there is only one active member 
-              elif len(conference) > 1:
-                for i in conference:
-                  connections[i].send(i+" has disconnected from the call")
-
-          print 'Removed calls'
-          print calls
-
-        elif cmd == r'\callc':
-          if self.host_in_call(host): #check if in call already
-            self.emit(QtCore.SIGNAL("updateText"), (self.address + "attempting conference call with " + host))
-            self.join_host_call(host)
-            channel_c = self.get_channel(host)
-            connections[self.address].send("You are now in a conference call with "+', '.join(channel_c)+"\n")
-            for h in channel_c:
-              connections[h].send("Adding "+self.address+" to the call")
-          else:
-            connections[self.address].send("There is no call active, you cannot make a conference call, use \call\n")
         else:
           self.send_all(data)
           self.emit(QtCore.SIGNAL("updateText"), (self.username + " sends msg " + data))
    
       else: #NO DATA
         del connections[self.username]
-
-        for conference in calls: #TODO fix if already in call
-          if self.address in conference:
-            conference.remove(self.address) #remove myself from the call/conference
-            if len(conference) == 1: #if there are less than two involved in the call
-              connections[conference[0]].send("dc__") #send the other host a dc__ command
-              self.emit(QtCore.SIGNAL("updateText"), (conference[0] + " has been prompted to disconnect "))
-              calls.remove(conference) #delete the entire call if there is only one active member 
-            elif len(conference) > 1:
-              for i in conference:
-                connections[i].send(i+" has disconnected from the call")
-
-
-        print self.address,"removed from calls"
-        print "calls:"
-        print calls
-
         self.emit(QtCore.SIGNAL("updateUserlist"), None) #send data as test
         self.emit(QtCore.SIGNAL("updateText"), (self.username + " has disconnected"))
         self.running = 0
-
-  def host_in_call(self, host):
-    for conference in calls:
-      if host in conference:
-        return True
-
-    return False
-
-  def get_channel(self, host):
-    for conference in calls:
-      if host in conference:
-        return conference
-
-  def join_host_call(self, host):
-    print "Adding",self.address,"to calls"
-    for conference in calls:
-      if host in conference:
-        conference.append(self.address)
-    print "calls:"
-    print calls
 
   def send_all(self, msg):
     for socket in connections.values():
@@ -163,8 +68,8 @@ class Client(QtCore.QThread):
 
   def whisper(self, host, msg):
     if connections.has_key(host):
-      connections[host].send("whisper from "+self.address+":"+msg)
-      self.client.send("whisper to "+self.address+":"+msg)
+      connections[host].send("whisper from "+self.username+":"+msg)
+      self.client.send("whisper to "+host+": "+msg)
     else:
       self.client.send("Sorry you cannot whisper to "+host+" because they do not exist")
 
@@ -185,18 +90,13 @@ class Client(QtCore.QThread):
     
     try:
       host = sdata[1]
-      host.rstrip()
     except:
       print 'No host'
   
     try:
-      msg = data[len(cmd)+len(host):]
+      msg = sdata[2]
     except:
       print 'No msg'
-
-    if not cmd == r'\call' and not cmd == r'\msg':
-      if cmd.startswith(r'\\'):
-        self.emit(QtCore.SIGNAL("updateText"), ("command " + cmd + " from " + self.address + " not valid"))
 
     return cmd, host, msg
        
