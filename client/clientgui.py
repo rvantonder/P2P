@@ -31,7 +31,6 @@ class ClientForm(QtGui.QWidget):
 #    self.pbar.initStyleOption(QtGui.QMacStyle)
     self.pbar.setOrientation(QtCore.Qt.Vertical)
     self.pbar.setGeometry(0, 0, 30, 200)
-    
 
     self.host = host
     self.port = port
@@ -62,6 +61,8 @@ class ClientForm(QtGui.QWidget):
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
     self.receiver.start() #start listening
 
+    #self.downloader = Downloader()
+
   def on_lineEdit_returnPressed(self):
     if self.ui.lineEdit.displayText() != '':
       stringToSend = self.ui.lineEdit.displayText()
@@ -86,6 +87,9 @@ class ClientForm(QtGui.QWidget):
   def update_msg(self, msg):
     self.ui.textEdit.append(msg)
     self.ui.textEdit.ensureCursorVisible()
+
+  def update_progressbar(self, value)
+    pass
 
 class Receiver(QtCore.QThread):
   def __init__(self, socket):
@@ -124,6 +128,16 @@ class Receiver(QtCore.QThread):
       return None
 
     self.emit(QtCore.SIGNAL("update_msg"), response)
+
+class Downloader(QtCore.QThread):
+  def __init__(self):
+    parent = None
+    QtCore.QThread.__init__(self, parent)
+
+  def download():
+    pass
+    #calculate amount downloaded out of total
+    #self.emit(QtCore.SIGNAL("update_progressbar"), value)
 
 
     """
