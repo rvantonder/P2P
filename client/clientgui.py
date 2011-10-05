@@ -27,6 +27,12 @@ class ClientForm(QtGui.QWidget):
     self.user_colour_list = {}
     self.running = 1
 
+    self.pbar = QtGui.QProgressBar(self)
+#    self.pbar.initStyleOption(QtGui.QMacStyle)
+    self.pbar.setOrientation(QtCore.Qt.Vertical)
+    self.pbar.setGeometry(0, 0, 30, 200)
+    
+
     self.host = host
     self.port = port
     self.size = 1024
