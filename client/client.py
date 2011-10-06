@@ -245,7 +245,7 @@ if __name__ == '__main__':
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
     f = open(sys.argv[4], 'r')
     for line in f.readlines():
-      filelist.append(line)
+      filelist.append(line.strip())
 
     gui.show()
     sys.exit(app.exec_())
