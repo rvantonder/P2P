@@ -38,9 +38,6 @@ class ClientForm(QtGui.QWidget):
     self.ui = Ui_Form()
     self.ui.setupUi(self)
     self.ui.lineEdit.setFocus()
-    self.icon = QtGui.QIcon('creeper.tif')
-    self.colour_list = (QtCore.Qt.red, QtCore.Qt.darkRed, QtCore.Qt.blue, QtCore.Qt.darkGreen, QtCore.Qt.magenta, QtCore.Qt.darkBlue, QtCore.Qt.darkCyan,QtCore.Qt.darkMagenta, QtCore.Qt.darkYellow, QtCore.Qt.darkGray, QtGui.QColor('#00CC99'), QtGui.QColor('#0099FF'), QtGui.QColor('#005555'), QtGui.QColor('#FF6600'), QtGui.QColor('#660033'), QtGui.QColor('#9900FF'))
-    self.user_colour_list = {}
     self.running = 1
 
     self.dpbar = MProgressBar(self) #download bar

@@ -7,7 +7,7 @@ from serverwindow import Ui_Form
 import pickle
 
 global connections
-global calls #calls will be a list that contains n-tuples, each of which corresponds to a conference in progress
+global search_results
 
 class Client(QtCore.QThread):
   def __init__(self,(client,address)):
@@ -168,7 +168,7 @@ class ServerGUI(QtGui.QWidget):
 if __name__ == '__main__':
 
   connections = {}
-  calls = []
+  search_results = {}
 
   try:
     app = QtGui.QApplication(sys.argv)
