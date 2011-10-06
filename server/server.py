@@ -18,6 +18,7 @@ class Client(QtCore.QThread):
     self.size = 1024
     self.running = 1
     self.username = ''
+    self.collectors = []
 
   def run(self): #when the client thread is started
     usn = self.client.recv(self.size)
@@ -47,15 +48,24 @@ class Client(QtCore.QThread):
         
         if cmd == r'\search':
           query = data.split()[1:]
-          collector = ResultCollector(query)
-          r = collector.start() #i sure hope the thread joins after... i doubt it tho
-          #results = '\n'.join(r)
-          #self.emit(QtCore.SIGNAL("updateText"), results) #should actually be sent to client
-          #self.client.send(results)
+          collector = ResultCollector(' '.join(query), hash(self.client.socket)) #send the socket hash as an identifier
+          collector.start() 
+          collcetors.append(collector) #keep reference
 
         elif cmd == r'\msg':
           self.whisper(host, msg)
 
+        elif cmd == r'**search': #must process a search result, send to a client
+          l = data.split()
+          h = l[1] #the hash
+          pickle = l[2] #the pickled list, no duplicate removal
+          for socket in connections.values():
+            if hash(socket) == h: #if the hash is the same
+              socket.send('++search '+pickle)
+            
+          #results = loads(pickle)
+          #results.sort()
+    
         else:
           self.send_all(data)
           self.emit(QtCore.SIGNAL("updateText"), (self.username + " sends msg " + data))
@@ -107,16 +117,17 @@ class Client(QtCore.QThread):
 
     return cmd, host, msg
 
-class ResultCollector(QtGui.QWidget):
-  def __init__(self, query):
+class ResultCollector(QtCore.QThread):
+  def __init__(self, query, search_identifier):
     parent = None
     QtCore.QThread.__init__(self, parent)
     self.query = query
+    self.search_identifier = search_identifier
 
-  def run():
+  def run(self):
     for socket in connections.values(): #send query to all
-      socket.send('__search '+self.query)
-    
+      socket.send('__search '+self.search_identifier + " " + self.query)
+   
        
 class ServerGUI(QtGui.QWidget):
   def __init__(self,port):
