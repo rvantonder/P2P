@@ -18,7 +18,7 @@ from clientwindow import Ui_Form
 The Client GUI class.
 """
 
-global filelist
+global filelist 
 
 class MProgressBar(QtGui.QProgressBar):
   def __init__(self, parent = None):
@@ -57,6 +57,8 @@ class ClientForm(QtGui.QWidget):
     self.size = 1024
     self.socket = None
     self.username = ''
+    
+    filelist['1234'] = 3
 
     try:
       self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -101,7 +103,7 @@ class ClientForm(QtGui.QWidget):
     self.ui.listWidget.clear()
 
     for i in l:
-      n = QtGui.QListWidgetItem(self.icon, str(i))
+      n = QtGui.QListWidgetItem(str(i))
       self.ui.listWidget.addItem(n)
 
   def update_msg(self, msg):
@@ -205,10 +207,12 @@ QProgressBar::chunk {
  
 
 if __name__ == '__main__':
-  gui = ClientForm('localhost',3001)
-
-  t = threading.Thread(target=gui.run)
-  t.setDaemon(True) #Sometimes programs spawn a thread as a daemon that runs without blocking the main program from exiting. Using daemon threads is useful for services where there may not be an easy way to interrupt the thread or where letting the thread die in the middle of its work does not lose or corrupt data
-  t.start()
-  gui.show()
-  sys.exit(app.exec_())
+  try:
+    filelist = {}
+    app = QtGui.QApplication(sys.argv)
+    gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
+    gui.show()
+    sys.exit(app.exec_())
+  except IndexError:
+    print 'Usage: python main.py <server> <port> <username>'
+ 
