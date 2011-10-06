@@ -240,9 +240,13 @@ QProgressBar::chunk {
 
 if __name__ == '__main__':
   try:
-    filelist = ['one.mov', 'sex.jpg', 'trolol.png'] 
+    filelist = []
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
+    f = open(sys.argv[4], 'r')
+    for line in f.readlines():
+      filelist.append(line)
+
     gui.show()
     sys.exit(app.exec_())
   except IndexError:

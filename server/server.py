@@ -56,11 +56,9 @@ class Client(QtCore.QThread):
           self.whisper(host, msg)
 
         elif cmd == r'**search': #must process a search result, send to a client
-          print data
           l = data.split(' ')
           h = l[1] #the hash
           p = l[2] #the pickled list, no duplicate removal
-          print 'pICKLE',p
           for socket in connections.values():
             if str(hash(socket)) == h: #if the hash is the same
               socket.send('++search'+p)
