@@ -46,9 +46,16 @@ class Client(QtCore.QThread):
         cmd, host, msg = self.parse(data)
         
         if cmd == r'\search':
-          pass
+          query = data.split()[1:]
+          collector = ResultCollector(query)
+          r = collector.start() #i sure hope the thread joins after... i doubt it tho
+          #results = '\n'.join(r)
+          #self.emit(QtCore.SIGNAL("updateText"), results) #should actually be sent to client
+          #self.client.send(results)
+
         elif cmd == r'\msg':
           self.whisper(host, msg)
+
         else:
           self.send_all(data)
           self.emit(QtCore.SIGNAL("updateText"), (self.username + " sends msg " + data))
@@ -99,6 +106,17 @@ class Client(QtCore.QThread):
       print 'No msg'
 
     return cmd, host, msg
+
+class ResultCollector(QtGui.QWidget):
+  def __init__(self, query):
+    parent = None
+    QtCore.QThread.__init__(self, parent)
+    self.query = query
+
+  def run():
+    for socket in connections.values(): #send query to all
+      socket.send('__search '+self.query)
+    
        
 class ServerGUI(QtGui.QWidget):
   def __init__(self,port):
