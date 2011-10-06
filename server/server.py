@@ -48,20 +48,22 @@ class Client(QtCore.QThread):
         
         if cmd == r'\search':
           query = data.split()[1:]
-          collector = ResultCollector(' '.join(query), hash(self.client.socket)) #send the socket hash as an identifier
+          collector = ResultCollector(' '.join(query), str(hash(self.client))) #send the socket hash as an identifier
           collector.start() 
-          collcetors.append(collector) #keep reference
+          self.collectors.append(collector) #keep reference
 
         elif cmd == r'\msg':
           self.whisper(host, msg)
 
         elif cmd == r'**search': #must process a search result, send to a client
-          l = data.split()
+          print data
+          l = data.split(' ')
           h = l[1] #the hash
-          pickle = l[2] #the pickled list, no duplicate removal
+          p = l[2] #the pickled list, no duplicate removal
+          print 'pICKLE',p
           for socket in connections.values():
-            if hash(socket) == h: #if the hash is the same
-              socket.send('++search '+pickle)
+            if str(hash(socket)) == h: #if the hash is the same
+              socket.send('++search'+p)
             
           #results = loads(pickle)
           #results.sort()
