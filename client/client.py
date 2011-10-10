@@ -240,12 +240,15 @@ QProgressBar::chunk {
 
 if __name__ == '__main__':
   try:
-    filelist = []
+    filelist = {}
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
-    f = open(sys.argv[4], 'r')
-    for line in f.readlines():
-      filelist.append(line.strip())
+     
+    path = "files/"
+    listing = os.listdir(path)
+    for infile in listing:
+        info = os.stat(path + infile)
+        filelist[infile] = info[6]/(1024.**2)
 
     gui.show()
     sys.exit(app.exec_())
