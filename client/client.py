@@ -62,6 +62,8 @@ class ClientForm(QtGui.QWidget):
     try:
       self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       self.socket.connect((self.host, self.port))
+      self.key = int(hash(self.socket)) ^ int(time.time())
+      self.key = self.key if self.key > 0 else -self.key
     except socket.error:
       print 'Not accepting connections'
       sys.exit(1)
@@ -202,7 +204,7 @@ class Searcher(QtCore.QThread): #will search for files and return the result to 
     #  if not string.find(filename, self.query) == -1:
     #    results.append(filename)
     
-    r = filter(lambda x: not string.find(x, self.query) == -1, filelist) #filter out results
+    r = filter(lambda x: not string.find(x.lower(), self.query.lower()) == -1, filelist) #filter out results
     result = pickle.dumps(r)
     print 'search result', result
     self.socket.send("**search "+self.search_identifier+ " " +result)
@@ -237,10 +239,10 @@ QProgressBar::chunk {
 }
 """    
  
-
 if __name__ == '__main__':
   try:
     filelist = []
+    searchresults = {}
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
     f = open(sys.argv[4], 'r')
