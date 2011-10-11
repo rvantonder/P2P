@@ -20,6 +20,7 @@ The Client GUI class.
 """
 
 global filelist 
+global searchresults
 
 class MProgressBar(QtGui.QProgressBar):
   def __init__(self, parent = None):
@@ -170,7 +171,9 @@ class Receiver(QtCore.QThread):
       return '<received search request>'
     elif response.startswith('++search'): #am getting a search result back from server
       print 'incoming search result'
-      results = '\n'.join(pickle.loads(response[8:])) #first element in list
+      r = response.split(' ')
+      searchresults[r[1]].append(pickle.loads(r[2]))
+      results = '\n'.join(pickle.loads(r[2])) #the query
       if len(results) > 0:
         self.emit(QtCore.SIGNAL("update_msg"), results)
       return
@@ -199,11 +202,6 @@ class Searcher(QtCore.QThread): #will search for files and return the result to 
 
   def run(self): #TODO filter!
     print 'searching list...'
-    #results = []
-    #for filename in filelist:
-    #  if not string.find(filename, self.query) == -1:
-    #    results.append(filename)
-    
     r = filter(lambda x: not string.find(x.lower(), self.query.lower()) == -1, filelist) #filter out results
     result = pickle.dumps(r)
     print 'search result', result
@@ -251,6 +249,8 @@ if __name__ == '__main__':
     for infile in listing:
         info = os.stat(path + infile)
         filelist[infile] = info[6]/(1024.**2)
+
+    print 'filelist',filelist
 
     gui.show()
     sys.exit(app.exec_())

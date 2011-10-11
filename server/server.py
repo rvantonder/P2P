@@ -61,7 +61,7 @@ class Client(QtCore.QThread):
           p = l[2] #the pickled list, no duplicate removal
           for socket in connections.values():
             if str(hash(socket)) == h: #if the hash is the same
-              socket.send('++search'+p)
+              socket.send('++search '+str(hash(self.client)) + ' ' + p) #return my hash, and the results to the right client 
             
           #results = loads(pickle)
           #results.sort()
