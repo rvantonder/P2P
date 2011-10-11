@@ -90,7 +90,7 @@ class ClientForm(QtGui.QWidget):
 
   def on_lineEdit_returnPressed(self):
     if self.ui.lineEdit.displayText() != '':
-      stringToSend = self.ui.lineEdit.displayText()
+      stringToSend = str(self.ui.lineEdit.displayText())
       #unfortunately, we must intercept a '/download' request client side, as the server does not store search results for the clients
 
       if stringToSend.startswith("\download "):
@@ -98,13 +98,18 @@ class ClientForm(QtGui.QWidget):
         for host in searchresults.keys():
           for result in searchresults[host]:
             if fileToDownload == result:
-              stringToSend = "\download "+host+" "+fileToDownload
+              stringToSend = "\download "+host+" "+self.key+" "+fileToDownload
               self.socket.send(str(stringToSend))
               self.ui.lineEdit.setText('')
+              #start a Downloader object
               return
-
+      
       try:
-        self.socket.send(str(stringToSend)) 
+        if not stringToSend.startswith("\download "):
+          self.socket.send(str(stringToSend)) 
+        else:
+          self.update_msg('This file is not among your search results')
+          
       except socket.error:
         self.ui.textEdit.setTextColor(QtCore.Qt.black)
         self.ui.textEdit.setText('The connection with the server has been lost, please restart the client.')
@@ -185,17 +190,27 @@ class Receiver(QtCore.QThread):
       r = response.split(' ')
       print 'splitresult'
       print r
+      pickled_results = pickle.loads(r[2])
       try:
-        searchresults[r[1]].append(pickle.loads(r[2]))
+        for i in pickled_results:
+          if i not in searchresults[r[1]]:
+            searchresults[r[1]].append(i)
       except KeyError:
-        searchresults[r[1]] = []
-        searchresults[r[1]].append(pickle.loads(r[2]))
+        searchresults[r[1]] = pickled_results
+        #searchresults[r[1]] = []
+        #for i in pickled_results:
+        #  searchresults[r[1]].append(i)
+
+      print 'current search results'
+      print searchresults
+
       results = '\n'.join(pickle.loads(r[2])) #the query
       if len(results) > 0:
         self.emit(QtCore.SIGNAL("update_msg"), results)
       return
+    elif response.startswith('++download'): #am getting a download request
+      print 'incoming download request: '+response
       
-    #self.emit(QtCore.SIGNAL("update_msg"), response)
     return response
 
 class Downloader(QtCore.QThread):
