@@ -69,7 +69,7 @@ class Client(QtCore.QThread):
           l = data.split(' ') # 'download', 'host hash', 'key', 'file name', no spaces in file-name 
           for socket in connections.values():
             if str(hash(socket)) == l[1]: #the hash
-              socket.send('++download '+" "+l[2]+" "+l[3]) #issue a download request, send key and file name
+              socket.send('++download '+l[2]+" "+l[3]) #issue a download request, send key and file name
     
         else:
           self.send_all(data)

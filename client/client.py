@@ -98,7 +98,7 @@ class ClientForm(QtGui.QWidget):
         for host in searchresults.keys():
           for result in searchresults[host]:
             if fileToDownload == result:
-              stringToSend = "\download "+host+" "+self.key+" "+fileToDownload
+              stringToSend = "\download "+host+" "+str(self.key)+" "+fileToDownload
               self.socket.send(str(stringToSend))
               self.ui.lineEdit.setText('')
               #start a Downloader object
