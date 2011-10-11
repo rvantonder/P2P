@@ -151,7 +151,7 @@ class Receiver(QtCore.QThread):
     self.key = key #the client key
 
     self.uploadSlotOpen = True
-    self.uploaders = [] #keeps trakc of uploaders (threads)
+    self.uploaders = [] #keeps track of uploaders (threads)
 
   def run(self):
     while self.running: 
@@ -224,7 +224,7 @@ class Receiver(QtCore.QThread):
         uploader = Uploader(key, ffile, address)
         self.connect(uploader, QtCore.SIGNAL("set_ul_flag"), self.setUploadSlotOpen) #allow the downloader to set the slot to open when done downloading
         uploader.start() #start listening
-        uploaders.append(self.uploader) #keep reference
+        self.uploaders.append(uploader) #keep reference
       else:
         print 'No download slot'
         
@@ -257,21 +257,23 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
 
     while 1:
       client, address = self.socket.accept()
+      print 'accepted',client,address
       msg = self.socket.recv(self.size)
+      
+      if msg:
+        if msg.startswith('**download'):
+          l = msg.split(' ')
+          k = l[1]
+          ffile = l[2]
 
-      if msg.startswith('**download'):
-        l = msg.split(' ')
-        k = l[1]
-        ffile = l[2]
-
-        if self.key == k and not self.downloading:
-          self.socket.send("ACCEPT")
-          self.downloading = True
-          #proceed to download
-        else:
-          self.socket.send("REJECT")
-      else: #socket.close??
-        pass
+          if self.key == k and not self.downloading:
+            self.socket.send("ACCEPT")
+            self.downloading = True
+            #proceed to download
+          else:
+            self.socket.send("REJECT")
+        else: #socket.close??
+          pass
 
 
 class Uploader(QtCore.QThread):
@@ -285,10 +287,12 @@ class Uploader(QtCore.QThread):
     self.key = key
 
   def run(self): #contact originating client with address and key provided by server
+    print 'uploader host',self.address
     try:
       self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       self.socket.connect((self.address, self.port))
-    except socket.error:
+    except socket.error as (enum, emsg):
+      print enum,emsg
       print 'Uploader could not connect to originating client'
 
     self.socket.send('**download '+self.key+' '+self.filename)
