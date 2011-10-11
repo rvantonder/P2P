@@ -91,6 +91,17 @@ class ClientForm(QtGui.QWidget):
   def on_lineEdit_returnPressed(self):
     if self.ui.lineEdit.displayText() != '':
       stringToSend = self.ui.lineEdit.displayText()
+      #unfortunately, we must intercept a '/download' request client side, as the server does not store search results for the clients
+
+      if stringToSend.startswith("\download "):
+        fileToDownload = stringToSend.split(' ')[1]
+        for host in searchresults.keys():
+          for result in searchresults[host]:
+            if fileToDownload == result:
+              stringToSend = "\download "+host+" "+fileToDownload
+              self.socket.send(str(stringToSend))
+              self.ui.lineEdit.setText('')
+              return
 
       try:
         self.socket.send(str(stringToSend)) 
@@ -210,10 +221,8 @@ class Searcher(QtCore.QThread): #will search for files and return the result to 
     print 'searching list...'
     r = filter(lambda x: not string.find(x.lower(), self.query.lower()) == -1, filelist) #filter out results
     result = pickle.dumps(r)
-    print 'search result', result
+    #print 'search result', result
     self.socket.send("**search "+self.search_identifier+ " " +result)
-
-
       
 MY_RED_STYLE = """
 QProgressBar{
