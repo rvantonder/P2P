@@ -80,7 +80,7 @@ class ClientForm(QtGui.QWidget):
     except socket.error:
       print 'Some socket error'
 
-    self.receiver = Receiver(self.socket)
+    self.receiver = Receiver(self.socket, self.key)
     self.connect(self.receiver, QtCore.SIGNAL("update_msg"), self.update_msg)
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
     self.connect(self.receiver, QtCore.SIGNAL("update_download_progressbar"), self.update_download_progressbar) #tester method. should be connected to a Downloader object
@@ -141,13 +141,17 @@ class ClientForm(QtGui.QWidget):
     self.upbar.setValue(value) 
 
 class Receiver(QtCore.QThread):
-  def __init__(self, socket):
+  def __init__(self, socket, key):
     parent = None
     QtCore.QThread.__init__(self, parent)
     self.socket = socket
     self.size = 1024
     self.running = 1
     self.searchers = []
+    self.key = key #the client key
+
+    self.uploadSlotOpen = True
+    self.uploader = None
 
   def run(self):
     while self.running: 
@@ -210,18 +214,50 @@ class Receiver(QtCore.QThread):
       return
     elif response.startswith('++download'): #am getting a download request
       print 'incoming download request: '+response
+      l = response.split(' ')
+      key = l[1]
+      ffile = l[2]
       
+      if self.uploadSlotOpen:
+        if str(self.key) == key: #if keys match TODO encryption??
+          #start uploader, send file
+          print 'OK to download file '+ffile
+          self.uploader = Uploader(ffile)
+          self.connect(self.uploader, QtCore.SIGNAL("set_ul_flag"), self.setUploadSlotOpen) #allow the downloader to set the slot to open when done downloading
+          self.uploader.start() #start listening
+
+        else:
+          print 'Keys do not match'
+      else:
+        print 'No download slot'
+        
     return response
+
+
+  def setUploadSlotOpen(b):
+    self.uploadSlotOpen = b
 
 class Downloader(QtCore.QThread):
   def __init__(self):
     parent = None
     QtCore.QThread.__init__(self, parent)
 
-  def download():
+  def downloader():
     pass
+
+class Uploader(QtCore.QThread):
+  def __init__(self, filename):
+    parent = None
+    QtCore.QThread.__init__(self, parent)
+
+  def upload():
+    pass
+    #self.emit(QtCore.SIGNAL("set_ul_flag"), False) #set false as soon as accepted
     #calculate amount downloaded out of total
-    #self.emit(QtCore.SIGNAL("update_progressbar"), value)
+    #self.emit(QtCore.SIGNAL("update_progressbar"), value) #update the bar
+
+    #self.emit(QtCore.SIGNAL("set_ul_flag"), True) #when finished
+
 
 class Searcher(QtCore.QThread): #will search for files and return the result to the server. incomplete, not sure if this is the right approach
   def __init__(self, query, socket, search_identifier):
@@ -232,7 +268,7 @@ class Searcher(QtCore.QThread): #will search for files and return the result to 
     self.search_identifier = search_identifier
     print 'initialized'
 
-  def run(self): #TODO filter!
+  def run(self):
     print 'searching list...'
     r = filter(lambda x: not string.find(x.lower(), self.query.lower()) == -1, filelist) #filter out results
     result = pickle.dumps(r)
