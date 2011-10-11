@@ -59,7 +59,7 @@ class ClientForm(QtGui.QWidget):
     self.size = 1024
     self.socket = None
     self.username = ''
-    
+
     try:
       self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       self.socket.connect((self.host, self.port))
@@ -80,13 +80,14 @@ class ClientForm(QtGui.QWidget):
     except socket.error:
       print 'Some socket error'
 
+    self.downloader = Downloader(self.key) #make the downloader listen for incoming download requests
+    self.downloader.start()
+
     self.receiver = Receiver(self.socket, self.key)
     self.connect(self.receiver, QtCore.SIGNAL("update_msg"), self.update_msg)
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
     self.connect(self.receiver, QtCore.SIGNAL("update_download_progressbar"), self.update_download_progressbar) #tester method. should be connected to a Downloader object
     self.receiver.start() #start listening
-
-    #self.downloader = Downloader()
 
   def on_lineEdit_returnPressed(self):
     if self.ui.lineEdit.displayText() != '':
@@ -101,7 +102,6 @@ class ClientForm(QtGui.QWidget):
               stringToSend = "\download "+host+" "+str(self.key)+" "+fileToDownload
               self.socket.send(str(stringToSend))
               self.ui.lineEdit.setText('')
-              #start a Downloader object
               return
       
       try:
@@ -151,7 +151,7 @@ class Receiver(QtCore.QThread):
     self.key = key #the client key
 
     self.uploadSlotOpen = True
-    self.uploader = None
+    self.uploaders = [] #keeps trakc of uploaders (threads)
 
   def run(self):
     while self.running: 
@@ -217,17 +217,14 @@ class Receiver(QtCore.QThread):
       l = response.split(' ')
       key = l[1]
       ffile = l[2]
+      address = l[3]
       
       if self.uploadSlotOpen:
-        if str(self.key) == key: #if keys match TODO encryption??
-          #start uploader, send file
-          print 'OK to download file '+ffile
-          self.uploader = Uploader(ffile)
-          self.connect(self.uploader, QtCore.SIGNAL("set_ul_flag"), self.setUploadSlotOpen) #allow the downloader to set the slot to open when done downloading
-          self.uploader.start() #start listening
-
-        else:
-          print 'Keys do not match'
+        print 'slot open for '+ffile
+        uploader = Uploader(key, ffile, address)
+        self.connect(uploader, QtCore.SIGNAL("set_ul_flag"), self.setUploadSlotOpen) #allow the downloader to set the slot to open when done downloading
+        uploader.start() #start listening
+        uploaders.append(self.uploader) #keep reference
       else:
         print 'No download slot'
         
@@ -237,18 +234,66 @@ class Receiver(QtCore.QThread):
   def setUploadSlotOpen(b):
     self.uploadSlotOpen = b
 
-class Downloader(QtCore.QThread):
-  def __init__(self):
+class Downloader(QtCore.QThread): #listens for incoming download requests
+  def __init__(self, key):
     parent = None
     QtCore.QThread.__init__(self, parent)
+    self.host = '' #bind to localhost
+    self.port = 3001 
+    self.backlog = 5
+    self.size = 1024
+    self.socket = None
+    self.key = key
+    self.downloading = False
 
-  def downloader():
-    pass
+    try:
+      self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      self.socket.bind((self.host,self.port))
+      self.socket.listen(self.backlog)
+    except socket.error:
+      print 'Some problem opening port for Downloader'
+
+  def run(self):
+
+    while 1:
+      client, address = self.socket.accept()
+      msg = self.socket.recv(self.size)
+
+      if msg.startswith('**download'):
+        l = msg.split(' ')
+        k = l[1]
+        ffile = l[2]
+
+        if self.key == k and not self.downloading:
+          self.socket.send("ACCEPT")
+          self.downloading = True
+          #proceed to download
+        else:
+          self.socket.send("REJECT")
+      else: #socket.close??
+        pass
+
 
 class Uploader(QtCore.QThread):
-  def __init__(self, filename):
+  def __init__(self, key, filename, address):
     parent = None
     QtCore.QThread.__init__(self, parent)
+    self.filename = filename
+    self.address = address
+    self.socket = None
+    self.port = 3001 #upload on port 3001
+    self.key = key
+
+  def run(self): #contact originating client with address and key provided by server
+    try:
+      self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      self.socket.connect((self.address, self.port))
+    except socket.error:
+      print 'Uploader could not connect to originating client'
+
+    self.socket.send('**download '+self.key+' '+self.filename)
+
+    #check for response, on key match.
 
   def upload():
     pass
