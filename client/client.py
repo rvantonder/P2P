@@ -172,7 +172,13 @@ class Receiver(QtCore.QThread):
     elif response.startswith('++search'): #am getting a search result back from server
       print 'incoming search result'
       r = response.split(' ')
-      searchresults[r[1]].append(pickle.loads(r[2]))
+      print 'splitresult'
+      print r
+      try:
+        searchresults[r[1]].append(pickle.loads(r[2]))
+      except KeyError:
+        searchresults[r[1]] = []
+        searchresults[r[1]].append(pickle.loads(r[2]))
       results = '\n'.join(pickle.loads(r[2])) #the query
       if len(results) > 0:
         self.emit(QtCore.SIGNAL("update_msg"), results)
