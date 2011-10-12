@@ -263,6 +263,8 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
     except:
       print '??'
 
+    print 'DOWNLOADER CONNECTED'
+
     while 1:
       msg = self.conn.recv(self.size)
       
@@ -272,9 +274,10 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
           k = l[1]
           ffile = l[2]
 
-          if self.key == k and not self.downloading:
+          if str(self.key) == str(k) and not self.downloading:
             self.conn.send("ACCEPT")
-            self.downloading = True
+            print 'Initiating download'
+            #self.downloading = True
             #proceed to download
           else:
             self.conn.send("REJECT")
