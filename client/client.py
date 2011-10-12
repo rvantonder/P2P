@@ -11,6 +11,7 @@ import os
 import random
 import time
 import string
+from difflib import *
 
 from PyQt4 import QtCore, QtGui
 from clientwindow import Ui_Form
@@ -324,7 +325,8 @@ class Searcher(QtCore.QThread): #will search for files and return the result to 
 
   def run(self):
     print 'searching list...'
-    r = filter(lambda x: not string.find(x.lower(), self.query.lower()) == -1, filelist) #filter out results
+    #r = filter(lambda x: not string.find(x.lower(), self.query.lower()) == -1, filelist) #filter out results
+    r = get_close_matches(self.query.lower(), map(lambda x: x.lower(), filelist))
     result = pickle.dumps(r)
     #print 'search result', result
     self.socket.send("**search "+self.search_identifier+ " " +result)
