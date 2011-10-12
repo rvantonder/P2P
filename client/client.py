@@ -247,7 +247,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
     self.downloading = False
 
     self.conn = None
-    self.addressOfUploader
+    self.uploaderAddress = None
 
     try:
       self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -258,7 +258,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
 
   def run(self):
     try:
-      self.conn, self.addressOfUploader = self.socket.accept()
+      self.conn, self.uploaderAddress = self.socket.accept()
     except:
       print '??'
 
