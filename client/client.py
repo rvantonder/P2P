@@ -246,6 +246,9 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
     self.key = key
     self.downloading = False
 
+    self.conn = None
+    self.addressOfUploader
+
     try:
       self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       self.socket.bind((self.host,self.port))
@@ -254,11 +257,13 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
       print 'Some problem opening port for Downloader'
 
   def run(self):
+    try:
+      self.conn, self.addressOfUploader = self.socket.accept()
+    except:
+      print '??'
 
     while 1:
-      client, address = self.socket.accept()
-      print 'accepted',client,address
-      msg = self.socket.recv(self.size)
+      msg = self.conn.recv(self.size)
       
       if msg:
         if msg.startswith('**download'):
@@ -267,11 +272,11 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
           ffile = l[2]
 
           if self.key == k and not self.downloading:
-            self.socket.send("ACCEPT")
+            self.conn.send("ACCEPT")
             self.downloading = True
             #proceed to download
           else:
-            self.socket.send("REJECT")
+            self.conn.send("REJECT")
         else: #socket.close??
           pass
 
