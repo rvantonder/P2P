@@ -12,6 +12,8 @@ import random
 import time
 import string
 
+import binascii as b
+
 from PyQt4 import QtCore, QtGui
 from clientwindow import Ui_Form
 
@@ -21,6 +23,7 @@ The Client GUI class.
 
 global filelist 
 global searchresults
+global port #TODO the port to upload to and download from, now a commandline argument
 
 class MProgressBar(QtGui.QProgressBar):
   def __init__(self, parent = None):
@@ -239,39 +242,58 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
     parent = None
     QtCore.QThread.__init__(self, parent)
     self.host = '' #bind to localhost
-    self.port = 3001 
+    self.port = port #TODO WAS 3001, NOW ITS THE FOURTH COMMANDLINE ARGUMENT
     self.backlog = 5
     self.size = 1024
     self.socket = None
     self.key = key
     self.downloading = False
 
+    self.conn = None
+    self.uploaderAddress = None
+
     try:
       self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      self.socket.bind((self.host,self.port))
+      self.socket.bind((self.host, self.port))
       self.socket.listen(self.backlog)
     except socket.error:
       print 'Some problem opening port for Downloader'
 
   def run(self):
+    try:
+      self.conn, self.uploaderAddress = self.socket.accept()
+    except:
+      print '??'
 
     while 1:
-      client, address = self.socket.accept()
-      print 'accepted',client,address
-      msg = self.socket.recv(self.size)
+      msg = self.conn.recv(self.size)
       
       if msg:
         if msg.startswith('**download'):
           l = msg.split(' ')
-          k = l[1]
-          ffile = l[2]
+          k = l[1] #key
+          ffile = l[2] #filename
+          fsize = l[3] #filesize
 
-          if self.key == k and not self.downloading:
-            self.socket.send("ACCEPT")
+          if str(self.key) == str(k) and not self.downloading:
+            #self.conn.send("ACCEPT")
             self.downloading = True
-            #proceed to download
+
+            #TODO proceed to download
+            print 'D: Creating file: ' + ffile
+            f = open('files/' + ffile , 'wb', 1)
+            while(1):
+                data = self.conn.recv(1024)
+                if not data:
+                    print 'D: Breaking the loop'
+                    break
+                print 'D: Writing data'
+                f.write(data)
+                print 'D: Written'
+            print 'D: Close file'
+            f.close()
           else:
-            self.socket.send("REJECT")
+            self.conn.send("REJECT")
         else: #socket.close??
           pass
 
@@ -283,7 +305,7 @@ class Uploader(QtCore.QThread):
     self.filename = filename
     self.address = address
     self.socket = None
-    self.port = 3001 #upload on port 3001
+    self.port = port #TODO Was 3001, NOW ITS THE 4 FOURTH COMMANDLINE ARGUMENT
     self.key = key
 
   def run(self): #contact originating client with address and key provided by server
@@ -295,9 +317,35 @@ class Uploader(QtCore.QThread):
       print enum,emsg
       print 'Uploader could not connect to originating client'
 
-    self.socket.send('**download '+self.key+' '+self.filename)
+    self.socket.send('**download ' + self.key + ' ' + self.filename + ' ' + str(filelist[self.filename]))
+    '''
+    #TODO send a file
+    print 'U: Opening file ' + self.filename
+    f = open('files/' + self.filename, 'rb')
+    print 'U: Reading all data'
+    data = f.read()
+    print 'U: Attempting to sendall'
+    self.socket.sendall(data) 
+    print 'U: Closing file'
+    f.close()       
+    '''
+    #TODO send a file
+    print 'U: Opening file ' + self.filename
+    f = open('files/' + self.filename, 'rb')
+    while(1):
+        print 'U: Reading 1024 bytes'
+        data = f.read(1024)
+        if not data:
+            print 'U: Breaking the loop'
+            break
+        print 'U: Attempting to send'
+        self.socket.send(data) 
+    print 'U: Closing file'
+    f.close()
+    #TODO If this socket is not closed, the file is not recieved completely
+    #on the downloading side.
+    self.socket.close()
 
-    #check for response, on key match.
 
   def upload():
     pass
@@ -356,6 +404,7 @@ if __name__ == '__main__':
   try:
     searchresults = {}
     filelist = {}
+    port = int(sys.argv[4]) #TODO THIS IS THE PORT ON WHICH THE DOWNLOADER LISTENS, AND THE UPLOADER SENDS TO
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
      
