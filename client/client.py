@@ -300,9 +300,9 @@ class Uploader(QtCore.QThread):
       print enum,emsg
       print 'Uploader could not connect to originating client'
 
-    self.socket.send('**download '+self.key+' '+self.filename)
+    self.socket.send('**download '+self.key+' '+self.filename) #no need to send filename, only filesize
 
-    #check for response, on key match.
+    #send a file
 
   def upload():
     pass
