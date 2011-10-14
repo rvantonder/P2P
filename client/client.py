@@ -279,12 +279,12 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
           fsize = l[3] #filesize
 
           if str(self.key) == str(k) and not self.downloading:
-<<<<<<< HEAD
-            self.conn.send("ACCEPT")
-            print 'Initiating download'
-            #self.downloading = True
-            #proceed to download
-=======
+#<<<<<<< HEAD
+#            self.conn.send("ACCEPT")
+#            print 'Initiating download'
+#            #self.downloading = True
+#            #proceed to download
+#=======
             #self.conn.send("ACCEPT")
             self.downloading = True
 
@@ -301,11 +301,11 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
                 print 'D: Written'
             print 'D: Close file'
             f.close()
->>>>>>> 5279d8a2e29d267e40b34ae3b4bc8b6b3bb2c1b7
-          else:
-            self.conn.send("REJECT")
-        else: #socket.close??
-          pass
+#>>>>>>> 5279d8a2e29d267e40b34ae3b4bc8b6b3bb2c1b7
+#          else:
+#            self.conn.send("REJECT")
+#        else: #socket.close??
+#          pass
 
 
 class Uploader(QtCore.QThread):
