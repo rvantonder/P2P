@@ -229,6 +229,7 @@ class Receiver(QtCore.QThread):
         self.connect(uploader, QtCore.SIGNAL("set_ul_flag"), self.setUploadSlotOpen) #allow the downloader to set the slot to open when done downloading
         uploader.start() #start listening
         self.uploaders.append(uploader) #keep reference
+      return #don't print the ++download business
       else:
         print 'No download slot'
         
