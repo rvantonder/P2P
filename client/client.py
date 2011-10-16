@@ -347,7 +347,7 @@ class Uploader(QtCore.QThread):
       print enum,emsg
       print 'Uploader could not connect to originating client'
 
-    self.socket.send('**download ' + enc(self.key) + ' ' + self.filename + ' ' + str(filelist[self.filename]))
+    self.socket.send('**download ' + str(self.key) + ' ' + self.filename + ' ' + str(filelist[self.filename]))
 
     increment = 1024. * 100 / float(filelist[self.filename])
     uprogress[0] = 0
