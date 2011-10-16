@@ -13,8 +13,6 @@ import time
 import string
 from difflib import *
 
-import binascii as b
-
 from PyQt4 import QtCore, QtGui
 from clientwindow import Ui_Form
 
@@ -25,6 +23,8 @@ The Client GUI class.
 global filelist 
 global searchresults
 global port #TODO the port to upload to and download from, now a commandline argument
+global uprogress #upload bar progress counter
+global dprogress #download bar progress counter
 
 class MProgressBar(QtGui.QProgressBar):
   def __init__(self, parent = None):
@@ -49,13 +49,13 @@ class ClientForm(QtGui.QWidget):
     self.dpbar = MProgressBar(self) #download bar
     self.dpbar.setOrientation(QtCore.Qt.Vertical)
     self.dpbar.setGeometry(520, 0, 20, 189)
-    self.dpbar.setValue(25)
+    self.dpbar.setValue(0)
     self.dpbar.setStyle(False)
 
     self.upbar = MProgressBar(self) #upload bar
     self.upbar.setOrientation(QtCore.Qt.Vertical)
     self.upbar.setGeometry(545, 0, 20, 189)
-    self.upbar.setValue(75)
+    self.upbar.setValue(0)
     self.upbar.setStyle(True)
 
     self.host = host
@@ -85,12 +85,16 @@ class ClientForm(QtGui.QWidget):
       print 'Some socket error'
 
     self.downloader = Downloader(self.key) #make the downloader listen for incoming download requests
+    #self.connect(self.downloader, QtCore.SIGNAL("update_upload_progressbar"), self.update_upload_progressbar)
+    #self.connect(self.downloader, QtCore.SIGNAL("update_download_progressbar"), self.update_download_progressbar)
     self.downloader.start()
 
     self.receiver = Receiver(self.socket, self.key)
     self.connect(self.receiver, QtCore.SIGNAL("update_msg"), self.update_msg)
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
-    self.connect(self.receiver, QtCore.SIGNAL("update_download_progressbar"), self.update_download_progressbar) #tester method. should be connected to a Downloader object
+    #self.connect(self.receiver, QtCore.SIGNAL("update_download_progressbar"), self.update_download_progressbar) #tester method. should be connected to a Downloader object
+    #self.connect(self.receiver, QtCore.SIGNAL("update_upload_progressbar"), self.update_upload_progressbar)
+    #self.connect(self.receiver, QtCore.SIGNAL("update_download_progressbar"), self.update_download_progressbar)
     self.receiver.start() #start listening
 
   def on_lineEdit_returnPressed(self):
@@ -132,17 +136,24 @@ class ClientForm(QtGui.QWidget):
     self.ui.textEdit.append(msg)
     self.ui.textEdit.ensureCursorVisible()
 
-  def update_download_progressbar(self, value):
-    self.dpbar.setValue(value)
-    v = value
-    if not v == 100: #XXX this is ONLY to demonstrate how it would appear. sleeping the thread is NOT a good idea; it defers other GUI events. no idea for a work around right now. its own thread would be overkill.
-      while not v == 100:
-        time.sleep(.005)
-        v += 1
-        self.dpbar.setValue(v)
+  def update_download_progressbar(self):
+    #self.dpbar.setValue(value)
+    #v = value
+    #if not v == 100: #XXX this is ONLY to demonstrate how it would appear. sleeping the thread is NOT a good idea; it defers other GUI events. no idea for a work around right now. its own thread would be overkill.
+    #  while not v == 100:
+    #    time.sleep(.005)
+    #    v += 1
+    #    self.dpbar.setValue(v)
+    while(1):
+      time.sleep(.005)
+      self.dpbar.setValue(dprogress[0])
     
-  def update_upload_progressbar(self, value):
-    self.upbar.setValue(value) 
+  def update_upload_progressbar(self):
+    #self.upbar.setValue(value) 
+    while(1):
+      time.sleep(.005)
+      self.upbar.setValue(uprogress[0])
+
 
 class Receiver(QtCore.QThread):
   def __init__(self, socket, key):
@@ -168,8 +179,9 @@ class Receiver(QtCore.QThread):
           display = self.parse_message(response)
           if not display == None:
             self.emit(QtCore.SIGNAL("update_msg"), display)
-            random_value = int(random.random()*100) #XXX tester method
-            self.emit(QtCore.SIGNAL("update_download_progressbar"), random_value) #XXX tester method
+            #random_value = int(random.random()*100) #XXX tester method
+            #self.emit(QtCore.SIGNAL("update_download_progressbar"), 50) #XXX tester method
+            #self.emit(QtCore.SIGNAL("update_upload_progressbar"), 50) #XXX tester method
       except socket.error:
         print 'Unexpected error, disconnecting'
         self.socket.close()
@@ -227,6 +239,11 @@ class Receiver(QtCore.QThread):
         print 'slot open for '+ffile
         uploader = Uploader(key, ffile, address)
         self.connect(uploader, QtCore.SIGNAL("set_ul_flag"), self.setUploadSlotOpen) #allow the downloader to set the slot to open when done downloading
+
+        #TODO enable uploader class to update gui?
+        #self.connect(uploader, QtCore.SIGNAL("update_upload_progressbar"), ClientForm.update_upload_progressbar)
+        #self.connect(uploader, QtCore.SIGNAL("update_download_progressbar"), ClientForm.update_download_progressbar)
+
         uploader.start() #start listening
         self.uploaders.append(uploader) #keep reference
       else:
@@ -288,20 +305,31 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
             #self.conn.send("ACCEPT")
             self.downloading = True
 
+            increment = 1024. * 100 / float(fsize)
+            dprogress[0] = 0
+                        
+            self.emit(QtCore.SIGNAL("update_download_progressbar"), 0)
             #TODO proceed to download
             print 'D: Creating file: ' + ffile
             f = open('files/' + ffile , 'wb', 1)
             while(1):
                 data = self.conn.recv(1024)
+                #self.emit(QtCore.SIGNAL("update_download_progressbar"), int(increment))
                 if not data:
                     print 'D: Breaking the loop'
                     break
                 print 'D: Writing data'
                 f.write(data)
+                dprogress[0] += increment
                 print 'D: Written'
             print 'D: Close file'
             f.close()
+<<<<<<< HEAD
 >>>>>>> 5279d8a2e29d267e40b34ae3b4bc8b6b3bb2c1b7
+=======
+            print increment
+            #self.emit(QtCore.SIGNAL("update_download_progressbar"), int(increment))
+>>>>>>> 85efa272481709bd1b682843c760581d40049abf
           else:
             self.conn.send("REJECT")
         else: #socket.close??
@@ -339,6 +367,11 @@ class Uploader(QtCore.QThread):
     print 'U: Closing file'
     f.close()       
     '''
+
+    increment = 1024. * 100 / float(filelist[self.filename])
+    uprogress[0] = 0
+    #self.emit(QtCore.SIGNAL("update_upload_progressbar"), 0)
+
     #TODO send a file
     print 'U: Opening file ' + self.filename
     f = open('files/' + self.filename, 'rb')
@@ -349,9 +382,13 @@ class Uploader(QtCore.QThread):
             print 'U: Breaking the loop'
             break
         print 'U: Attempting to send'
-        self.socket.send(data) 
+        self.socket.send(data)
+        uprogress[0] += increment
+        #self.emit(QtCore.SIGNAL("update_upload_progressbar"), increment)
     print 'U: Closing file'
     f.close()
+    self.emit(QtCore.SIGNAL("update_upload_progressbar"), increment)
+
     #TODO If this socket is not closed, the file is not recieved completely
     #on the downloading side.
     self.socket.close()
@@ -415,6 +452,8 @@ if __name__ == '__main__':
   try:
     searchresults = {}
     filelist = {}
+    uprogress = []
+    dprogress = []
     port = int(sys.argv[4]) #TODO THIS IS THE PORT ON WHICH THE DOWNLOADER LISTENS, AND THE UPLOADER SENDS TO
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
