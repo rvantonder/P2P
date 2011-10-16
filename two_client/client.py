@@ -151,12 +151,12 @@ class ClientForm(QtGui.QWidget):
   def update_dpbar(self):
     while(1):
       time.sleep(.05)
-      self.dpbar.setValue(dprogress[0])
+      self.dpbar.setValue(int(dprogress[0]))
     
   def update_upbar(self):
     while(1):
       time.sleep(.05)
-      self.upbar.setValue(uprogress[0])
+      self.upbar.setValue(int(uprogress[0]))
 
 
 class Receiver(QtCore.QThread):
@@ -260,7 +260,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
     QtCore.QThread.__init__(self, parent)
     self.host = '' #bind to localhost
     self.port = port #TODO WAS 3001, NOW ITS THE FOURTH COMMANDLINE ARGUMENT
-    self.backlog = 5
+    self.backlog = 1
     self.size = 1024
     self.socket = None
     self.key = key
@@ -298,16 +298,8 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
 
           if str(self.key) == str(dec(k)) and not self.downloading:
             print 'Keys TRUE'
-#<<<<<<< HEAD
-#            self.conn.send("ACCEPT")
-#            print 'Initiating download'
-#            #self.downloading = True
-#            #proceed to download
-#=======
-            #self.conn.send("ACCEPT")
             self.downloading = True
 
-            #increment = 1024* 100 / float(fsize)
             increment = 100./(float(fsize)*1024.)
             print 'increment',increment
             
@@ -327,16 +319,20 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
                 f.write(data)
                 dprogress[0] += increment
             #    print 'D: Written'
-            #print 'D: Close file'
+            #    print 'D: Close file'
             f.close()
 
-            print increment
-            #self.emit(QtCore.SIGNAL("update_download_progressbar"), int(increment))
-
           else:
+            print 'connection rejected'
             self.conn.send("REJECT")
         else: #socket.close??
-          pass
+          print 'Message did not start with **download'
+          self.conn.close()
+          #return
+      else:
+        print 'No data'
+        self.conn.close()
+        break
 
 class Uploader(QtCore.QThread):
   def __init__(self, key, filename, address):
