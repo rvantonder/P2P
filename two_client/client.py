@@ -59,13 +59,20 @@ class ClientForm(QtGui.QWidget):
     self.dpbar.setOrientation(QtCore.Qt.Vertical)
     self.dpbar.setGeometry(520, 0, 20, 189)
     self.dpbar.setValue(0)
-    self.dpbar.setStyle(False)
+    self.dpbar.setStyle(True)
+    dpbar_thread = threading.Thread(name="update_dpbar", target=self.update_dpbar)
+    dpbar_thread.setDaemon(True)
+    dpbar_thread.start() 
 
     self.upbar = MProgressBar(self) #upload bar
     self.upbar.setOrientation(QtCore.Qt.Vertical)
     self.upbar.setGeometry(545, 0, 20, 189)
     self.upbar.setValue(0)
-    self.upbar.setStyle(True)
+    self.upbar.setStyle(False)
+    upbar_thread = threading.Thread(name="update_upbar", target=self.update_upbar)
+    upbar_thread.setDaemon(True)
+    upbar_thread.start() #TODO daemon thread?
+
 
     self.host = host
     self.port = port
@@ -141,14 +148,14 @@ class ClientForm(QtGui.QWidget):
     self.ui.textEdit.append(msg)
     self.ui.textEdit.ensureCursorVisible()
 
-  def update_download_progressbar(self):
+  def update_dpbar(self):
     while(1):
-      time.sleep(.005)
+      time.sleep(.05)
       self.dpbar.setValue(dprogress[0])
     
-  def update_upload_progressbar(self):
+  def update_upbar(self):
     while(1):
-      time.sleep(.005)
+      time.sleep(.05)
       self.upbar.setValue(uprogress[0])
 
 
@@ -300,8 +307,11 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
             #self.conn.send("ACCEPT")
             self.downloading = True
 
-            increment = 1024. * 100 / float(fsize)
-            dprogress[0] = 0
+            #increment = 1024* 100 / float(fsize)
+            increment = 100./(float(fsize)*1024.)
+            print 'increment',increment
+            
+            dprogress[0] = 0.0
                         
             self.emit(QtCore.SIGNAL("update_download_progressbar"), 0)
             #TODO proceed to download
@@ -349,8 +359,8 @@ class Uploader(QtCore.QThread):
 
     self.socket.send('**download ' + str(self.key) + ' ' + self.filename + ' ' + str(filelist[self.filename]))
 
-    increment = 1024. * 100 / float(filelist[self.filename])
-    uprogress[0] = 0
+    increment = 100./(float(filelist[self.filename])*1024.)
+    uprogress[0] = 0.0
     #self.emit(QtCore.SIGNAL("update_upload_progressbar"), 0)
 
     #TODO send a file
@@ -421,9 +431,9 @@ if __name__ == '__main__':
     searchresults = {}
     filelist = {}
     uprogress = []
-    uprogress.append(0)
+    uprogress.append(0.0)
     dprogress = []
-    dprogress.append(0)
+    dprogress.append(0.0)
     port = int(sys.argv[4]) #TODO THIS IS THE PORT ON WHICH THE DOWNLOADER LISTENS, AND THE UPLOADER SENDS TO
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
