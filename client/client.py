@@ -127,9 +127,10 @@ class ClientForm(QtGui.QWidget):
               self.socket.send(str(stringToSend))
               self.ui.lineEdit.setText('')
               return
-      elif stringToSend.startswith("\pause "): #TODO try?
+      elif stringToSend.startswith("\pause"): #TODO try?
+        print 'downloading from',self.downloadingFromHost
         stringToSend = "\pause "+self.downloadingFromHost
-      elif stringToSend.stargswith(r'\resume'):
+      elif stringToSend.startswith(r'\resume'):
         stringToSend = r'\resume '+self.downloadingFromHost
       
       try:
@@ -265,14 +266,16 @@ class Receiver(QtCore.QThread):
         uploader.start() #start listening
         self.uploaders.append(uploader) #keep reference
         return #don't print the ++download business
-      elif response.startswith('++pause'):
-        print 'pause of upload requested'
-        doUpload[0] = 0 
-      elif response.startswith('++resume'):
-        print 'resume of upload requested'
-        doUpload[0] = 1
       else:
         print 'No download slot'
+    elif response.startswith('++pause'):
+      print 'PAUSE!'
+      doUpload[0] = 0 
+      return
+    elif response.startswith('++resume'):
+      print 'RESUME!'
+      doUpload[0] = 1
+      return
         
     return response
 
@@ -450,6 +453,9 @@ if __name__ == '__main__':
     dprogress.append(0.0)
     doUpload = []
     doUpload.append(1)
+
+    print 'doupload',doUpload
+
     port = int(sys.argv[4]) #TODO THIS IS THE PORT ON WHICH THE DOWNLOADER LISTENS, AND THE UPLOADER SENDS TO
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
