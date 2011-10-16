@@ -287,6 +287,8 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
           ffile = l[2] #filename
           fsize = l[3] #filesize
 
+          print 'self.key',self.key,'recv key',k,'dec key',dec(k)
+
           if str(self.key) == str(dec(k)) and not self.downloading:
             print 'Keys TRUE'
 #<<<<<<< HEAD
