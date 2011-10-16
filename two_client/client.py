@@ -332,7 +332,6 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
       else:
         print 'No data'
         self.conn.close()
-        break
 
 class Uploader(QtCore.QThread):
   def __init__(self, key, filename, address):
