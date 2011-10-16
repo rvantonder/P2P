@@ -325,8 +325,11 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
             if str(self.key) == str(dec(k)) and not self.downloading:
               print 'Keys TRUE'
               self.downloading = True
-
-              increment = 100./(float(fsize)*1024.)
+              
+              try:
+                increment = 100./(float(fsize)*1024.)
+              except ValueError:
+                print fsize
               print 'increment',increment
             
               dprogress[0] = 0.0
