@@ -277,39 +277,43 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
       print 'Some problem opening port for Downloader'
 
   def run(self):
-    try:
-      self.conn, self.uploaderAddress = self.socket.accept()
-    except:
-      print '??'
-
-    print 'DOWNLOADER CONNECTED'
-
     while 1:
-      msg = self.conn.recv(self.size)
+      try:
+        self.conn, self.uploaderAddress = self.socket.accept()
+      except:
+        print '??'
+
+      print 'DOWNLOADER CONNECTED'
+
+      while 1:
+        msg = self.conn.recv(self.size)
+
+        if not msg.startswith('**download'):
+          print msg
       
-      if msg:
-        if msg.startswith('**download'):
-          l = msg.split(' ')
-          k = l[1] #key
-          ffile = l[2] #filename
-          fsize = l[3] #filesize
+        if msg:
+          if msg.startswith('**download'):
+            l = msg.split(' ')
+            k = l[1] #key
+            ffile = l[2] #filename
+            fsize = l[3] #filesize
 
-          print 'self.key',self.key,'recv key',k,'dec key',dec(k)
+            print 'self.key',self.key,'dec received key',dec(k)
 
-          if str(self.key) == str(dec(k)) and not self.downloading:
-            print 'Keys TRUE'
-            self.downloading = True
+            if str(self.key) == str(dec(k)) and not self.downloading:
+              print 'Keys TRUE'
+              self.downloading = True
 
-            increment = 100./(float(fsize)*1024.)
-            print 'increment',increment
+              increment = 100./(float(fsize)*1024.)
+              print 'increment',increment
             
-            dprogress[0] = 0.0
+              dprogress[0] = 0.0
                         
-            self.emit(QtCore.SIGNAL("update_download_progressbar"), 0)
-            #TODO proceed to download
-            #print 'D: Creating file: ' + ffile
-            f = open('files/' + ffile , 'wb', 1)
-            while(1):
+              self.emit(QtCore.SIGNAL("update_download_progressbar"), 0)
+              #TODO proceed to download
+              #print 'D: Creating file: ' + ffile
+              f = open('files/' + ffile , 'wb', 1)
+              while(1):
                 data = self.conn.recv(1024)
                 #self.emit(QtCore.SIGNAL("update_download_progressbar"), int(increment))
                 if not data:
@@ -320,18 +324,21 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
                 dprogress[0] += increment
             #    print 'D: Written'
             #    print 'D: Close file'
-            f.close()
+              f.close()
 
-          else:
-            print 'connection rejected'
-            self.conn.send("REJECT")
-        else: #socket.close??
-          print 'Message did not start with **download'
+            else:
+              print 'connection rejected'
+              self.conn.send("REJECT")
+          else: #socket.close??
+            print 'Message did not start with **download'
+            #self.conn.close()
+            #return
+        else:
+          print 'No data'
           self.conn.close()
-          #return
-      else:
-        print 'No data'
-        self.conn.close()
+          print 'No more connection'
+         
+        self.downloading = False
         break
 
 class Uploader(QtCore.QThread):
