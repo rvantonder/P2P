@@ -70,7 +70,17 @@ class Client(QtCore.QThread):
           for socket in connections.values():
             if str(hash(socket)) == l[1]: #the hash
               socket.send('++download '+l[2]+" "+l[3]+" "+self.address) #issue a download request, send key, file name, contact address
-    
+        elif cmd == r'\pause':
+          l = data.split(' ')
+          for socket in connections.values():
+            if str(hash(socket)) == l[1]:
+              socket.send('++pause')
+        elif cmd == r'\resume':
+          l = data.split(' ')
+          for socket in connections.values():
+            if str(hash(socket)) == l[1]:
+              socket.send('++resume')
+
         else:
           self.send_all(data)
           self.emit(QtCore.SIGNAL("updateText"), (self.username + " sends msg " + data))
