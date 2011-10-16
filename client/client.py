@@ -60,20 +60,25 @@ class ClientForm(QtGui.QWidget):
     self.dpbar.setGeometry(520, 0, 20, 189)
     self.dpbar.setValue(0)
     self.dpbar.setStyle(True)
-    dpbar_thread = threading.Thread(name="update_dpbar", target=self.update_dpbar)
-    dpbar_thread.setDaemon(True)
-    dpbar_thread.start() 
 
+    #self.bars = []
+
+    self.dpbar_thread = Update_dpbar()
+    self.connect(self.dpbar_thread, QtCore.SIGNAL("set_dpbar"), self.set_dpbar)
+    self.dpbar_thread.start() 
+    #self.bars.append(self.dpbar_thread)
+    
     self.upbar = MProgressBar(self) #upload bar
     self.upbar.setOrientation(QtCore.Qt.Vertical)
     self.upbar.setGeometry(545, 0, 20, 189)
     self.upbar.setValue(0)
     self.upbar.setStyle(False)
-    upbar_thread = threading.Thread(name="update_upbar", target=self.update_upbar)
-    upbar_thread.setDaemon(True)
-    upbar_thread.start() #TODO daemon thread?
-
-
+    
+    self.upbar_thread = Update_upbar()
+    self.connect(self.upbar_thread, QtCore.SIGNAL("set_upbar"), self.set_upbar)
+    self.upbar_thread.start()
+    #self.bars.append(self.upbar_thread)
+    
     self.host = host
     self.port = port
     self.size = 1024
@@ -109,6 +114,7 @@ class ClientForm(QtGui.QWidget):
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
     self.receiver.start() #start listening
 
+  
   def on_lineEdit_returnPressed(self):
     if self.ui.lineEdit.displayText() != '':
       stringToSend = str(self.ui.lineEdit.displayText())
@@ -148,17 +154,33 @@ class ClientForm(QtGui.QWidget):
     self.ui.textEdit.append(msg)
     self.ui.textEdit.ensureCursorVisible()
 
-  def update_dpbar(self):
-    while(1):
-      time.sleep(.05)
-      self.dpbar.setValue(int(dprogress[0]))
-    
-  def update_upbar(self):
-    while(1):
-      time.sleep(.05)
-      self.upbar.setValue(int(uprogress[0]))
+  def set_dpbar(self, v):
+    self.dpbar.setValue(v)
+
+  def set_upbar(self, v):
+    self.upbar.setValue(v)
 
 
+class Update_dpbar(QtCore.QThread):
+  def __init__(self):
+    parent = None
+    QtCore.QThread.__init__(self, parent)
+
+  def run(self):
+    while(1):
+      time.sleep(.05)
+      self.emit(QtCore.SIGNAL("set_dpbar"), int(dprogress[0]))
+
+class Update_upbar(QtCore.QThread):
+  def __init__(self):
+    parent = None
+    QtCore.QThread.__init__(self, parent)
+
+  def run(self):
+    while(1):
+      time.sleep(.05)
+      self.emit(QtCore.SIGNAL("set_upbar"), int(uprogress[0]))
+ 
 class Receiver(QtCore.QThread):
   def __init__(self, socket, key):
     parent = None
