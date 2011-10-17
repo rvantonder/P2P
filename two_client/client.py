@@ -22,10 +22,11 @@ The Client GUI class.
 
 global filelist 
 global searchresults
-global port #TODO the port to upload to and download from, now a commandline argument
+global port
 global uprogress #upload bar progress counter
 global dprogress #download bar progress counter
 global doUpload #can has upload
+global path
 
 #Affine Substitution Cipher
 def enc(n): return ''.join(map(lambda x: str((a*int(x)+b) % 10), n))
@@ -237,17 +238,25 @@ class Receiver(QtCore.QThread):
       print 'splitresult'
       print r
       pickled_results = pickle.loads(r[2])
+
+      temp_results = []
+
       try:
         for i in pickled_results:
-          if i not in searchresults[r[1]]:
+          if (i not in searchresults[r[1]]) and (not i in filelist.keys()):
             searchresults[r[1]].append(i)
+            temp_results.append(i)
       except KeyError:
-        searchresults[r[1]] = pickled_results
-
+        searchresults[r[1]] = []
+        for i in pickled_results:
+          if (i not in searchresults[r[1]]) and (not i in filelist.keys()): #TODO double check
+            searchresults[r[1]].append(i)
+            temp_results.append(i)
+        
       print 'current search results'
       print searchresults
 
-      results = '\n'.join(pickle.loads(r[2])) #the query
+      results = '\n'.join(temp_results) #the query
       if len(results) > 0:
         self.emit(QtCore.SIGNAL("update_msg"), results)
       return
@@ -269,11 +278,9 @@ class Receiver(QtCore.QThread):
       else:
         print 'No download slot'
     elif response.startswith('++pause'):
-      print 'PAUSE!'
       doUpload[0] = 0 
       return
     elif response.startswith('++resume'):
-      print 'RESUME!'
       doUpload[0] = 1
       return
         
@@ -340,7 +347,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
               dprogress[0] = 0.0
                         
               self.emit(QtCore.SIGNAL("update_download_progressbar"), 0)
-              f = open('files/' + ffile , 'wb', 1)
+              f = open(path[0] + ffile , 'wb', 1)
               while(1):
                 data = self.conn.recv(1024)
                 if not data:
@@ -386,7 +393,7 @@ class Uploader(QtCore.QThread):
     uprogress[0] = 0.0
     #self.emit(QtCore.SIGNAL("update_upload_progressbar"), 0)
 
-    f = open('files/' + self.filename, 'rb')
+    f = open(path[0] + self.filename, 'rb')
     while(1):
       while doUpload[0]:
         data = f.read(1024)
@@ -460,13 +467,16 @@ if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
      
-    path = "files/"
-    listing = os.listdir(path)
+    #path = "files/"
+    #path = "/var/tmp/"
+    path = []
+    path.append("/var/tmp/")
+    listing = os.listdir(path[0])
     for infile in listing:
-        info = os.stat(path + infile)
+        info = os.stat(path[0] + infile)
         filelist[infile] = info[6]/(1024.**2)
 
-    print 'filelist',filelist
+    print 'filelist values',filelist.keys()
 
     gui.show()
     sys.exit(app.exec_())
