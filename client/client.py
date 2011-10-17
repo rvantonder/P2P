@@ -25,7 +25,7 @@ global searchresults
 global port
 global uprogress #upload bar progress counter
 global dprogress #download bar progress counter
-global doUpload #can has upload
+#global doUpload #can has upload
 global path
 
 #Affine Substitution Cipher
@@ -115,7 +115,10 @@ class ClientForm(QtGui.QWidget):
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
     self.receiver.start() #start listening
 
-  
+  def closeEvent(self, event):
+    self.dpbar_thread.terminate()
+    self.upbar_thread.terminate()
+
   def on_lineEdit_returnPressed(self):
     if self.ui.lineEdit.displayText() != '':
       stringToSend = str(self.ui.lineEdit.displayText())
@@ -386,16 +389,15 @@ class Uploader(QtCore.QThread):
 
     increment = 100./(float(filelist[self.filename])*1024.)
     uprogress[0] = 0.0
-    #self.emit(QtCore.SIGNAL("update_upload_progressbar"), 0)
 
     f = open(path[0] + self.filename, 'rb')
     while(1):
-      while doUpload[0]:
-        data = f.read(1024)
-        if not data:
-            break
-        self.socket.send(data)
-        uprogress[0] += increment
+    #  while doUpload[0]:
+      data = f.read(1024)
+      if not data:
+        break
+      self.socket.send(data)
+      uprogress[0] += increment
 
     f.close()
     self.emit(QtCore.SIGNAL("update_upload_progressbar"), increment)
@@ -453,10 +455,10 @@ if __name__ == '__main__':
     uprogress.append(0.0)
     dprogress = []
     dprogress.append(0.0)
-    doUpload = []
-    doUpload.append(1)
+    #doUpload = []
+    #doUpload.append(1)
 
-    print 'doupload',doUpload
+#    print 'doupload',doUpload
 
     port = int(sys.argv[4]) #TODO THIS IS THE PORT ON WHICH THE DOWNLOADER LISTENS, AND THE UPLOADER SENDS TO
     app = QtGui.QApplication(sys.argv)

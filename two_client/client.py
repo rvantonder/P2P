@@ -25,7 +25,7 @@ global searchresults
 global port
 global uprogress #upload bar progress counter
 global dprogress #download bar progress counter
-global doUpload #can has upload
+#global doUpload #can has upload
 global path
 
 #Affine Substitution Cipher
@@ -271,10 +271,10 @@ class Receiver(QtCore.QThread):
       else:
         print 'No download slot'
     elif response.startswith('++pause'):
-      doUpload[0] = 0 
+      #doUpload[0] = 0 
       return
     elif response.startswith('++resume'):
-      doUpload[0] = 1
+      #doUpload[0] = 1
       return
         
     return response
@@ -361,6 +361,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
           print 'No more connection'
          
         self.downloading = False
+        print 'done downloading'
         break
 
 class Uploader(QtCore.QThread):
@@ -389,12 +390,12 @@ class Uploader(QtCore.QThread):
 
     f = open(path[0] + self.filename, 'rb')
     while(1):
-      while doUpload[0]:
-        data = f.read(1024)
-        if not data:
-            break
-        self.socket.send(data)
-        uprogress[0] += increment
+    #  while doUpload[0]:
+      data = f.read(1024)
+      if not data:
+        break
+      self.socket.send(data)
+      uprogress[0] += increment
 
     f.close()
     self.emit(QtCore.SIGNAL("update_upload_progressbar"), increment)
@@ -452,10 +453,10 @@ if __name__ == '__main__':
     uprogress.append(0.0)
     dprogress = []
     dprogress.append(0.0)
-    doUpload = []
-    doUpload.append(1)
+    #doUpload = []
+    #doUpload.append(1)
 
-    print 'doupload',doUpload
+#    print 'doupload',doUpload
 
     port = int(sys.argv[4]) #TODO THIS IS THE PORT ON WHICH THE DOWNLOADER LISTENS, AND THE UPLOADER SENDS TO
     app = QtGui.QApplication(sys.argv)
