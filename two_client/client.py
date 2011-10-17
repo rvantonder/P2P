@@ -90,6 +90,8 @@ class ClientForm(QtGui.QWidget):
       self.key = int(hash(self.socket)) ^ int(time.time())
       self.key = self.key if self.key > 0 else -self.key
       print 'sample key',self.key
+      print 'key encrypted',enc(str(self.key))
+      print 'key decrypted',dec(enc(str(self.key)))
     except socket.error:
       print 'Not accepting connections'
       sys.exit(1)
@@ -233,35 +235,26 @@ class Receiver(QtCore.QThread):
       self.searchers.append(s) #need to keep reference
       return '<received search request>'
     elif response.startswith('++search'): #am getting a search result back from server
-      print 'incoming search result'
       r = response.split(' ')
-      print 'splitresult'
-      print r
       pickled_results = pickle.loads(r[2])
 
       temp_results = []
 
       try:
         for i in pickled_results:
-          if (i not in searchresults[r[1]]) and (not i in filelist.keys()):
+          if i not in searchresults[r[1]]:
             searchresults[r[1]].append(i)
-            temp_results.append(i)
       except KeyError:
         searchresults[r[1]] = []
         for i in pickled_results:
-          if (i not in searchresults[r[1]]) and (not i in filelist.keys()): #TODO double check
+          if i not in searchresults[r[1]]: #TODO double check
             searchresults[r[1]].append(i)
-            temp_results.append(i)
-        
-      print 'current search results'
-      print searchresults
 
-      results = '\n'.join(temp_results) #the query
+      results = '\n'.join(pickle.loads(r[2])) #the query
       if len(results) > 0:
         self.emit(QtCore.SIGNAL("update_msg"), results)
       return
     elif response.startswith('++download'): #am getting a download request
-      print 'incoming download request: '+response
       l = response.split(' ')
       key = l[1]
       ffile = l[2]
@@ -316,6 +309,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
     while 1:
       try:
         self.conn, self.uploaderAddress = self.socket.accept()
+        print 'Accepted new connection'
       except:
         print '??'
 

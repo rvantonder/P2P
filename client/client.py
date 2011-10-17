@@ -244,15 +244,13 @@ class Receiver(QtCore.QThread):
         for i in pickled_results:
           if i not in searchresults[r[1]]:
             searchresults[r[1]].append(i)
-            temp_results.append(i)
       except KeyError:
         searchresults[r[1]] = []
         for i in pickled_results:
           if i not in searchresults[r[1]]: #TODO double check
             searchresults[r[1]].append(i)
-            temp_results.append(i)
 
-      results = '\n'.join(temp_results) #the query
+      results = '\n'.join(pickle.loads(r[2])) #the query
       if len(results) > 0:
         self.emit(QtCore.SIGNAL("update_msg"), results)
       return
@@ -311,6 +309,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
     while 1:
       try:
         self.conn, self.uploaderAddress = self.socket.accept()
+        print 'Accepted new connection'
       except:
         print '??'
 
@@ -362,6 +361,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
           print 'No more connection'
          
         self.downloading = False
+        print 'done downloading'
         break
 
 class Uploader(QtCore.QThread):
