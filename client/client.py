@@ -25,7 +25,7 @@ global searchresults
 global port
 global uprogress #upload bar progress counter
 global dprogress #download bar progress counter
-#global doUpload #can has upload
+global doUpload #can has upload
 global path
 
 #Affine Substitution Cipher
@@ -390,14 +390,20 @@ class Uploader(QtCore.QThread):
     increment = 100./(float(filelist[self.filename])*1024.)
     uprogress[0] = 0.0
 
+    doUpload[0] = 1
+    #print 'DOUPLOAD, before loop', doUpload[0]
     f = open(path[0] + self.filename, 'rb')
-    while(1):
-    #  while doUpload[0]:
-      data = f.read(1024)
-      if not data:
-        break
-      self.socket.send(data)
-      uprogress[0] += increment
+    uploading = 1
+
+    while uploading:
+      #print 'DOUPLOAD, inside loop', doUpload[0]
+      while doUpload[0]:
+        data = f.read(1024)
+        if not data:
+          uploading = 0
+          break #zomgggg
+        self.socket.send(data)
+        uprogress[0] += increment
 
     f.close()
     self.emit(QtCore.SIGNAL("update_upload_progressbar"), increment)
@@ -455,8 +461,8 @@ if __name__ == '__main__':
     uprogress.append(0.0)
     dprogress = []
     dprogress.append(0.0)
-    #doUpload = []
-    #doUpload.append(1)
+    doUpload = []
+    doUpload.append(1)
 
 #    print 'doupload',doUpload
 

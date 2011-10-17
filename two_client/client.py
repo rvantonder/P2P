@@ -25,7 +25,7 @@ global searchresults
 global port
 global uprogress #upload bar progress counter
 global dprogress #download bar progress counter
-#global doUpload #can has upload
+global doUpload #can has upload
 global path
 
 #Affine Substitution Cipher
@@ -115,7 +115,10 @@ class ClientForm(QtGui.QWidget):
     self.connect(self.receiver, QtCore.SIGNAL("update_userlist"), self.update_userlist)
     self.receiver.start() #start listening
 
-  
+  def closeEvent(self, event):
+    self.dpbar_thread.terminate()
+    self.upbar_thread.terminate()
+
   def on_lineEdit_returnPressed(self):
     if self.ui.lineEdit.displayText() != '':
       stringToSend = str(self.ui.lineEdit.displayText())
@@ -271,10 +274,10 @@ class Receiver(QtCore.QThread):
       else:
         print 'No download slot'
     elif response.startswith('++pause'):
-      #doUpload[0] = 0 
+      doUpload[0] = 0 
       return
     elif response.startswith('++resume'):
-      #doUpload[0] = 1
+      doUpload[0] = 1
       return
         
     return response
@@ -386,16 +389,21 @@ class Uploader(QtCore.QThread):
 
     increment = 100./(float(filelist[self.filename])*1024.)
     uprogress[0] = 0.0
-    #self.emit(QtCore.SIGNAL("update_upload_progressbar"), 0)
 
+    doUpload[0] = 1
+    #print 'DOUPLOAD, before loop', doUpload[0]
     f = open(path[0] + self.filename, 'rb')
-    while(1):
-    #  while doUpload[0]:
-      data = f.read(1024)
-      if not data:
-        break
-      self.socket.send(data)
-      uprogress[0] += increment
+    uploading = 1
+
+    while uploading:
+      #print 'DOUPLOAD, inside loop', doUpload[0]
+      while doUpload[0]:
+        data = f.read(1024)
+        if not data:
+          uploading = 0
+          break #zomgggg
+        self.socket.send(data)
+        uprogress[0] += increment
 
     f.close()
     self.emit(QtCore.SIGNAL("update_upload_progressbar"), increment)
@@ -453,8 +461,8 @@ if __name__ == '__main__':
     uprogress.append(0.0)
     dprogress = []
     dprogress.append(0.0)
-    #doUpload = []
-    #doUpload.append(1)
+    doUpload = []
+    doUpload.append(1)
 
 #    print 'doupload',doUpload
 
