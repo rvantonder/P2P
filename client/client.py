@@ -268,9 +268,11 @@ class Receiver(QtCore.QThread):
       else:
         print 'No download slot'
     elif response.startswith('++pause'):
+      self.emit(QtCore.SIGNAL("update_msg"), 'Download Paused')
       doUpload[0] = 0 
       return
     elif response.startswith('++resume'):
+      self.emit(QtCore.SIGNAL("update_msg"), 'Download Resumed')
       doUpload[0] = 1
       return
         
