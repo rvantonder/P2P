@@ -89,9 +89,6 @@ class ClientForm(QtGui.QWidget):
       self.socket.connect((self.host, self.port))
       self.key = int(hash(self.socket)) ^ int(time.time())
       self.key = self.key if self.key > 0 else -self.key
-      print 'sample key',self.key
-      print 'key encrypted',enc(str(self.key))
-      print 'key decrypted',dec(enc(str(self.key)))
     except socket.error:
       print 'Not accepting connections'
       sys.exit(1)
@@ -134,7 +131,6 @@ class ClientForm(QtGui.QWidget):
               self.ui.lineEdit.setText('')
               return
       elif stringToSend.startswith("\pause"): #TODO try?
-        print 'downloading from',self.downloadingFromHost
         stringToSend = "\pause "+self.downloadingFromHost
       elif stringToSend.startswith(r'\resume'):
         stringToSend = r'\resume '+self.downloadingFromHost
@@ -232,11 +228,10 @@ class Receiver(QtCore.QThread):
     elif response.startswith('__search'):
       search_identifier = response.split()[1] #the hash
       query = response.split()[2:] #the rest of the query
-      print 'search query',query
       s = Searcher(' '.join(query),self.socket,search_identifier)
       s.start()
       self.searchers.append(s) #need to keep reference
-      return '<received search request>'
+      return 
     elif response.startswith('++search'): #am getting a search result back from server
       r = response.split(' ')
       pickled_results = pickle.loads(r[2])
@@ -264,7 +259,6 @@ class Receiver(QtCore.QThread):
       address = l[3]
       
       if self.uploadSlotOpen:
-        print 'slot open for '+ffile
         uploader = Uploader(key, ffile, address)
         self.connect(uploader, QtCore.SIGNAL("set_ul_flag"), self.setUploadSlotOpen) #allow the downloader to set the slot to open when done downloading
 
@@ -314,7 +308,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
         self.conn, self.uploaderAddress = self.socket.accept()
         print 'Accepted new connection'
       except:
-        print '??'
+        print 'Port already in use, error'
 
       while 1:
         msg = self.conn.recv(self.size)
@@ -334,12 +328,16 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
             if str(self.key) == str(dec(k)) and not self.downloading:
               print 'Keys TRUE'
               self.downloading = True
-              
+
+                              
+            
               try:
                 increment = 100./(float(fsize)*1024.)
               except ValueError:
                 print fsize
-              print 'increment',increment
+                print 'thefuck'
+
+              #print 'increment',increment
             
               dprogress[0] = 0.0
                         
@@ -464,14 +462,10 @@ if __name__ == '__main__':
     doUpload = []
     doUpload.append(1)
 
-#    print 'doupload',doUpload
-
-    port = int(sys.argv[4]) #TODO THIS IS THE PORT ON WHICH THE DOWNLOADER LISTENS, AND THE UPLOADER SENDS TO
+    port = int(sys.argv[4])
     app = QtGui.QApplication(sys.argv)
     gui = ClientForm(sys.argv[1], int(sys.argv[2]), sys.argv[3])
      
-    #path = "files/"
-    #path = "/var/tmp/"
     path = []
     path.append("/var/tmp/")
     listing = os.listdir(path[0])
@@ -479,10 +473,8 @@ if __name__ == '__main__':
         info = os.stat(path[0] + infile)
         filelist[infile] = info[6]/(1024.**2)
 
-    print 'filelist values',filelist.keys()
-
     gui.show()
     sys.exit(app.exec_())
   except IndexError:
-    print 'Usage: python main.py <server> <port> <username>'
+    print 'Usage: python main.py <server ip> <port> <username> <upload/download port>'
  

@@ -108,7 +108,7 @@ class ClientForm(QtGui.QWidget):
       print 'Some socket error'
 
     self.downloader = Downloader(self.key) #make the downloader listen for incoming download requests
-    self.downloader.start()
+    self.downloader.start(QtCore.QThread.HighestPriority)
 
     self.receiver = Receiver(self.socket, self.key)
     self.connect(self.receiver, QtCore.SIGNAL("update_msg"), self.update_msg)
@@ -268,7 +268,7 @@ class Receiver(QtCore.QThread):
         uploader = Uploader(key, ffile, address)
         self.connect(uploader, QtCore.SIGNAL("set_ul_flag"), self.setUploadSlotOpen) #allow the downloader to set the slot to open when done downloading
 
-        uploader.start() #start listening
+        uploader.start(QtCore.QThread.LowestPriority) #start listening
         self.uploaders.append(uploader) #keep reference
         return #don't print the ++download business
       else:
@@ -334,12 +334,14 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
             if str(self.key) == str(dec(k)) and not self.downloading:
               print 'Keys TRUE'
               self.downloading = True
-              
+
+                            
               try:
                 increment = 100./(float(fsize)*1024.)
               except ValueError:
                 print fsize
-              print 'increment',increment
+
+              #print 'increment',increment
             
               dprogress[0] = 0.0
                         
