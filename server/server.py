@@ -118,17 +118,17 @@ class Client(QtCore.QThread):
     try:
       cmd = sdata[0]
     except:
-      print 'No cmd index'
+      pass
     
     try:
       host = sdata[1]
     except:
-      print 'No host'
+      pass
   
     try:
       msg = sdata[2]
     except:
-      print 'No msg'
+      pass
 
     return cmd, host, msg
 
@@ -140,8 +140,9 @@ class ResultCollector(QtCore.QThread):
     self.search_identifier = search_identifier
 
   def run(self):
-    for socket in connections.values(): #send query to all
-      socket.send('__search '+self.search_identifier + " " + self.query)
+    for socket in connections.values(): #send query to all, except self
+      if not str(hash(self.client)) == str(hash(socket)): #TODO check working
+        socket.send('__search '+self.search_identifier + " " + self.query)
    
        
 class ServerGUI(QtGui.QWidget):
