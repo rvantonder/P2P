@@ -141,7 +141,7 @@ class ResultCollector(QtCore.QThread):
 
   def run(self):
     for socket in connections.values(): #send query to all, except self
-      if not str(hash(self.client)) == str(hash(socket)): #TODO check working
+      if not self.search_identifier == str(hash(socket)): #TODO check working
         socket.send('__search '+self.search_identifier + " " + self.query)
    
        

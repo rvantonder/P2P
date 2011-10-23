@@ -130,10 +130,12 @@ class ClientForm(QtGui.QWidget):
               self.socket.send(str(stringToSend))
               self.ui.lineEdit.setText('')
               return
-      elif stringToSend.startswith("\pause"): #TODO try?
+      elif stringToSend.startswith("\pause"): 
         stringToSend = "\pause "+self.downloadingFromHost
+        self.update_msg("Download Paused")
       elif stringToSend.startswith(r'\resume'):
         stringToSend = r'\resume '+self.downloadingFromHost
+        self.update_msg("Download Resumed")
       
       try:
         if not stringToSend.startswith("\download "):
@@ -268,11 +270,9 @@ class Receiver(QtCore.QThread):
       else:
         print 'No download slot'
     elif response.startswith('++pause'):
-      self.emit(QtCore.SIGNAL("update_msg"), 'Download Paused')
       doUpload[0] = 0 
-      return
+      return 
     elif response.startswith('++resume'):
-      self.emit(QtCore.SIGNAL("update_msg"), 'Download Resumed')
       doUpload[0] = 1
       return
         
@@ -308,7 +308,6 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
     while 1:
       try:
         self.conn, self.uploaderAddress = self.socket.accept()
-        print 'Accepted new connection'
       except:
         print 'Port already in use, error'
 
@@ -325,10 +324,7 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
             ffile = l[2] #filename
             fsize = l[3] #filesize
 
-            print 'self.key',self.key,'dec received key',dec(k)
-
             if str(self.key) == str(dec(k)) and not self.downloading:
-              print 'Keys TRUE'
               self.downloading = True
 
                               
@@ -364,7 +360,6 @@ class Downloader(QtCore.QThread): #listens for incoming download requests
           print 'No more connection'
          
         self.downloading = False
-        print 'done downloading'
         break
 
 class Uploader(QtCore.QThread):
@@ -417,10 +412,8 @@ class Searcher(QtCore.QThread): #will search for files and return the result to 
     self.query = query
     self.socket = socket
     self.search_identifier = search_identifier
-    print 'initialized'
 
   def run(self):
-    print 'searching list...'
     r = get_close_matches(self.query.lower(), map(lambda x: x.lower(), filelist))
     result = pickle.dumps(r)
     self.socket.send("**search "+self.search_identifier+ " " +result)

@@ -1,0 +1,172 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{amstext}
+\usepackage{url}
+
+
+
+\title{File Sharing Program}
+\author{R. van Tonder, 15676633 \\ A. Esterhuizen, 15367940}
+\date{\today}
+
+\begin{document}
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+
+\section{Description}
+\paragraph{} 
+In this project, a peer-to-peer file-sharing program was implemented. It consists of a client/server model, with some constraints. In particular, search requests should be forwarded by the server, and clients cannot transfer files preceding a key check, and request forwarding by the server. Thus, the client front-end gives no indication of where files are downloaded from or uploaded to. The most pertinent exercises of this project included implementing a distributed search, pause/resume functionality, and establishing an upload/download protocol. Other important aspects included use of multiple threads for GUI purposes, key encryption, and search string matching.
+
+\section{Features}
+\subsection{Included}
+\subsubsection{Server}
+%R
+The server has the following capabilities, in accordance with the
+project specification.
+
+\begin{enumerate}
+ \item The server accepts connection requests from clients, and updates the user-list with the username of connected clients.
+ \item Usernames must be unique, and are checked by the server at connection time.
+ \item The server is responsible for forwarding search requests in a distributed manner to all other clients.
+ \item The server is responsible for forwarding download requests to all clients, and ``introduces" clients to one another.
+ \item Maintains connection information of all clients.
+ \item Whispering and global chat message relaying.
+ \item A GUI which displays 
+ \begin{itemize}
+  \item All messages sent through the server
+  \item Client connections to the server
+  \item Client disconnections from the server
+  \item The current user-list
+ \end{itemize}
+\end{enumerate}
+
+\subsubsection{Client}
+The client has the following capabilities, in accordance with the project specification.
+
+\begin{enumerate}
+ \item Clients may connect and disconnect without incident.
+ \item Commands that are processed by the server for various functionalities, such as \verb|\search|, \verb|\download|, \verb|\pause|, \verb|\resume|, and \verb|\msg|. See \ref{det} for more.
+ \item Searches return exact matches as well as close matches.
+ \item Single upload or download stream.
+ \item Concurrent upload and download streams.
+ \item Files download/upload correctly.
+ \item Pause/Resume functionality.
+ \item A GUI which displays
+ \begin{itemize}
+  \item The current user list
+  \item All global messages, and whispers when applicable
+  \item Progress indicators for both uploading and downloading.
+ \end{itemize}
+
+\end{enumerate}
+
+\subsection{Features Not Included}
+\paragraph{}
+File list directories are hard-coded in the implementation. GUI look-and-feel, and progress bar colours, are not customizable.
+
+\subsection{Extra Features}
+\label{moar}
+\paragraph{} 
+Encryption has been added to the implementation, affording greater security. Upon receiving a download request, a client will compare their own key to the key received in the request. If the keys match, the client will start uploading the file requested. Sending client keys over the wire can make them susceptible to packet-sniffing. It is conceivable that a malicious person could obtain client keys, and use them to impersonate or otherwise permanently occupy upload slots.
+\paragraph{}
+For this reason, keys are first encrypted with an \emph{affine substitution cipher}\footnote{See http://en.wikipedia.org/wiki/Affine\_cipher}  before being sent over the wire. The server never requires decrypting this key, and simply forwards it. Receiving clients then decrypt the key and compare it to their own. While not the most robust security measure, it will at least deter amateurs who hope to simply make use of packet-sniffing.
+
+\section{Design, Data Structures, and Algorithms}
+\label{det}
+\subsection{Server}
+\paragraph{} 
+The server is responsible for forwarding messages between clients, download requests, and search requests. File lists are not stored on the server, and for this reason actual searches are performed client-side. The server maintains a dictionary mapping of connected clients and connection hash values. Because the server needs to identify where search requests come from, and who to return search results to, some sort of identifier is necessary. However, using the IP of clients is undesirable as clients then receive information that is not intended for them. Thus, the connection hash values are used, which are essentially a hash of the socket object represented by a client on the server. Conversion to, and from, the hash value is done server-side.
+
+\subsubsection{Operation of Distributed Search}
+\paragraph{} 
+The server distributes search requests made by clients and are recognized by a \verb|__search| token perpended to a message. After each client has performed a search, it returns its results and originating client hash has to the server, prepended by \verb|++search|. The server uses the dictionary to look up the IP of the client who originally issued the search request. Results of search requests are output on the originating client as they are received via the server. While it would have been fully acceptable to temporarily send client file lists to the server for processing, the implemented search is much more distributed in nature. 
+
+\subsection{Client}
+
+\subsubsection{Overview}
+\paragraph{} 
+The client is launched with four command line arguments. They are: \verb|<host-name>| \verb|<port>| \verb|<nickname>| \verb|<receiver-port>|.
+Upon start-up the client establishes a connection with the server at the specified host-name and port, and requests that its nickname be validated.
+If the nickname is already in use, the user will be notified on the command line window, at which point the client will exit.
+The \verb|<receiver-port>| parameter is the port number used by the client for uploading and downloading files.
+\paragraph{} 
+Upon successful start up the client searches a directory for available files and creates a dictionary using filenames as keys and file sizes as values.
+By default this directory is \verb|/var/tmp/|. See \ref{comp} for more.
+Also, the client receives the user list from the server, and may commence with performing a search. It is important that
+a \verb|download <filename>| request be preceded by an initial \verb|\search <filename>| request as a download cannot commence without any search results.
+
+Incoming server messages are parsed for the following commands, after which the appropriate action is taken.
+\begin{itemize}
+	\item \verb|__search <file name>| Perform a search on the local client.
+	\item \verb|++search <file names>| Receive search results back from a single client.
+	\item \verb|++download <key> <file> <address>| Perform an upload.
+	\item \verb|++pause| Pause the upload.
+	\item \verb|++resume| Resume the upload.
+\end{itemize}
+\paragraph{} 
+There is an additional \verb|**download <key> <filename> <filesize>| command which is sent from one client to another to initiate a download as described below.
+
+\subsubsection{Searching}
+\paragraph{} 
+The client contains a \verb|Searcher| object, which is responsible for searching through a clients local file list, and returning results to the server. The \verb|difflib| library in Python was used to perform string matching, which matches close strings calculated from deltas between a query and a list of filenames. The advantage of this is that intensive processing is done client-side, rather than server-side, and is of particular concern for large file lists.
+
+\subsection{Encryption}
+The client performs encryption and decryption of keys sent and received as a result of file transfer requests. See \ref{moar} for more.
+
+\subsubsection{Downloading and Uploading}
+\paragraph{} 
+The client implementation makes use of several threads working concurrently to facilitate uploading a file, downloading a file, listening
+for server commands, updating the GUI, and updating the download and upload 
+progress bars separately from other GUI elements. Downloading a file is performed by the \verb|Downloader| object, which runs in its own thread. One such thread is
+started when the client is launched, and it takes care of all subsequent download requests. The \verb|Downloader| thread listens
+for incoming connections from another client, and the \verb|**download <key> <filename> <filesize>| command signals that a file download must be started. 
+An \verb|Uploader| object thread is created each time a client receives the \verb|++download <key> <file> <address>| command from the server, signaling that
+a file must be uploaded to another client. At this point the \verb|Uploader| thread establishes a connection with said client
+and sends the \verb|**download <key> <filename> <filesize>| command. Once an upload has completed, the \verb|Uploader| thread terminates 
+its connection with the receiving client.
+\paragraph{} 
+Clients can only perform one upload at a time and one download at a time (although these may occur together).
+Whenever a download or an upload is initiated, flags are set which prevent clients from uploading or downloading when such
+activities are already underway. When the download or upload finishes, the flags are set once more, to indicate a new download
+or upload activity may begin.
+\paragraph{} 
+As mentioned, each progress bar is updated by its own thread. This is done by having the progress of an upload and download stored
+as separate global variables. Each thread updates its respective progress bar with the value from its respective global variable, at which
+point it sleeps to avoid updating the progress bar too often.
+The variable indicating upload progress is increment by the \verb|Uploader| thread whilst the variable indicating download progress
+is incremented by the \verb|Downloader| thread. These global variables are python lists which are made thread-safe via the Global Interpreter Lock (GIL).
+\paragraph{} 
+In the \verb|Uploader| thread, a requested file is opened and read as a binary file. The file is read in increments of 1024 bytes which are
+then sent to the receiving client. This continues until the file is sent in its entirety. In the \verb|Downloader| thread, a new file is
+created with the requested file's name and written to as a binary file in increments of 1024 bytes until all data have been received.
+\paragraph{} 
+Pause/resume functionality was implemented by checking a variable in the \verb|Uploader| thread. Clients who are downloading may issue a pause request to the uploading client, which sets the variable in the \verb|Uploader| thread.
+
+\section{Complications}
+\label{comp}
+\paragraph{} 
+If the requested file already exists
+within the client's file directory, it will be overwritten. 
+\paragraph{} 
+While downloading and uploading takes place at acceptable speeds, once the downloading client issues a pause command, the uploading client
+slows down significantly. That is, if the uploading client is also performing a download, the download is slowed down significantly. 
+This is believed to be caused by the while loop which allows for repeatedly reading and sending data. While the upload is
+on pause, the while loop does no real work during each iteration, and consumes CPU cycles. An attempted solution was to assign a low priority to
+the \verb|Uploader| thread, but this approach was found to be ineffective, and abandoned.
+\paragraph{} 
+Temporary connection failures do not impact the interaction between clients and server. Once the connection resumes, client-server interaction
+continues. For example, removing and reinserting the workstation's network cable does not cause clients to lose
+their connection to the server. Chat messages and search requests issued during the short period of disconnection
+are sent when the connection resumes and are still transmitted successfully.
+
+\section{Conclusion}
+\paragraph{} 
+The implementation affords an effective means by which to transfer files, with a distributed search and pause/resume functionality. The exercise was valuable in illustrating the concepts of peer-to-peer networks, and the special considerations that need to be made when keeping clients as anonymous as possible. This project has certainly been the most involved project in terms of programming--- it required a lot of thread management, GUI related elements, network programming, and appropriate data structures. Thus, it has also been the most rewarding.
+
+
+\end{document}

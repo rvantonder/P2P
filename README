@@ -1,0 +1,13 @@
+pyqt must be installed. 
+
+Run client with:
+
+python client.py <server ip> <port> <username> <receiver-port>
+
+Good default values are port=3000 and receiver-port=3001
+
+Run server with:
+
+python server.py <port>
+
+where port=3000 for the default values given above
